@@ -9,9 +9,9 @@
 #define PLUGIN_VERSION "1.02"
 
 public Plugin myinfo = {
-    name = "Discord Chat Bridge",
+    name = "SourceCord",
     author = "sharkobarko", 
-    description = "Bridges chat between Discord and game server",
+    description = "Discord chat integration for Source Engine games",
     version = PLUGIN_VERSION,
     url = ""
 };
@@ -44,7 +44,7 @@ StringMap g_hChannelNameCache;
 StringMap g_hRoleNameCache;
 
 public void OnPluginStart() {
-    g_cvConfigFile = CreateConVar("dcb_config_file", "discord_bridge", "config filename (without .cfg)", FCVAR_NOTIFY | FCVAR_DONTRECORD);
+    g_cvConfigFile = CreateConVar("dcb_config_file", "sourcecord", "config filename (without .cfg)", FCVAR_NOTIFY | FCVAR_DONTRECORD);
     g_cvBotToken = CreateConVar("dcb_bot_token", "", "discord bot token", FCVAR_PROTECTED);
     g_cvChannelId = CreateConVar("dcb_channel_id", "", "discord channel ID", FCVAR_NOTIFY);
     g_cvWebhookUrl = CreateConVar("dcb_webhook_url", "", "discord webhook URL", FCVAR_PROTECTED);
@@ -93,11 +93,7 @@ public void OnMapStart() {
     StartTimer();
 }
 
-public void OnConVarChanged(
-    ConVar convar,
-    const char[] oldValue,
-    const char[] newValue
-    ) {
+public void OnConVarChanged(ConVar convar, const char[] oldValue, const char[] newValue) {
     if (convar == g_cvConfigFile) {
         ServerCommand("exec sourcemod/%s.cfg", newValue);
         return;
@@ -148,14 +144,14 @@ public Action Timer_CheckDiscord(Handle timer) {
     Format(authHeader, sizeof(authHeader), "Bot %s", g_sBotToken);
     
     request.SetHeader("Authorization", authHeader);
-    request.SetHeader("User-Agent", "SourceMod-Discord-Bridge/1.0");
+    request.SetHeader("User-Agent", "SourceCord/1.0");
     
     request.Get(OnDiscordResponse);
     
     return Plugin_Continue;
 }
 
-public void OnDiscordResponse(HTTPResponse response, any value) {
+public void OnDiscordResponse(HTTPResponse response) {
     if (response.Status != HTTPStatus_OK) {
         if (response.Status == HTTPStatus_Unauthorized) {
             LogError("Discord API: Unauthorized - check your bot token");
@@ -238,11 +234,7 @@ public void OnDiscordResponse(HTTPResponse response, any value) {
     }
 }
 
-public Action Event_PlayerSay(
-    Event event,
-    const char[] name,
-    bool dontBroadcast
-    ) {
+public Action Event_PlayerSay(Event event, const char[] name, bool dontBroadcast) {
     int client = GetClientOfUserId(event.GetInt("userid"));
     
     if (!IsValidClient(client) || IsChatTrigger()) {
@@ -261,11 +253,7 @@ public Action Event_PlayerSay(
     return Plugin_Continue;
 }
 
-public Action Event_PlayerConnect(
-    Event event,
-    const char[] name,
-    bool dontBroadcast
-    ) {
+public Action Event_PlayerConnect(Event event, const char[] name, bool dontBroadcast) {
     if (!g_bLogConnections) return Plugin_Continue;
     
     if (event.GetBool("bot")) {
@@ -281,11 +269,7 @@ public Action Event_PlayerConnect(
     return Plugin_Continue;
 }
 
-public Action Event_PlayerDisconnect(
-    Event event,
-    const char[] name,
-    bool dontBroadcast
-    ) {
+public Action Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
     if (!g_bLogConnections) return Plugin_Continue;
     
     int client = GetClientOfUserId(event.GetInt("userid"));
@@ -305,13 +289,7 @@ public Action Event_PlayerDisconnect(
     return Plugin_Continue;
 }
 
-void CopySubstring(
-    const char[] source,
-    int startPos,
-    int length,
-    char[] dest,
-    int maxlen
-    ) {
+void CopySubstring(const char[] source, int startPos, int length, char[] dest, int maxlen) {
     int copyLen = length;
     if (copyLen >= maxlen) {
         copyLen = maxlen - 1;
@@ -523,7 +501,7 @@ void GetDiscordUserName(const char[] mentionUserId, const char[] originalUserId,
     Format(authHeader, sizeof(authHeader), "Bot %s", g_sBotToken);
     
     request.SetHeader("Authorization", authHeader);
-    request.SetHeader("User-Agent", "SourceMod-Discord-Bridge/1.0");
+    request.SetHeader("User-Agent", "SourceCord/1.0");
     
     request.Get(OnDiscordUserResponse, pack);
 }
@@ -582,7 +560,7 @@ void GetDiscordChannelName(const char[] channelId, const char[] originalUserId, 
     Format(authHeader, sizeof(authHeader), "Bot %s", g_sBotToken);
     
     request.SetHeader("Authorization", authHeader);
-    request.SetHeader("User-Agent", "SourceMod-Discord-Bridge/1.0");
+    request.SetHeader("User-Agent", "SourceCord/1.0");
     
     request.Get(OnDiscordChannelResponse, pack);
 }
@@ -631,7 +609,7 @@ void GetDiscordRoleName(const char[] roleId, const char[] originalUserId, const 
     Format(authHeader, sizeof(authHeader), "Bot %s", g_sBotToken);
     
     request.SetHeader("Authorization", authHeader);
-    request.SetHeader("User-Agent", "SourceMod-Discord-Bridge/1.0");
+    request.SetHeader("User-Agent", "SourceCord/1.0");
     
     request.Get(OnDiscordRoleNameResponse, pack);
 }
@@ -704,7 +682,7 @@ void GetDiscordRoleColor(const char[] userId, const char[] username, const char[
     Format(authHeader, sizeof(authHeader), "Bot %s", g_sBotToken);
     
     request.SetHeader("Authorization", authHeader);
-    request.SetHeader("User-Agent", "SourceMod-Discord-Bridge/1.0");
+    request.SetHeader("User-Agent", "SourceCord/1.0");
     
     request.Get(OnDiscordMemberResponse, pack);
 }
@@ -767,7 +745,7 @@ void GetTopRoleColor(JSONArray roleIds, const char[] userId, const char[] userna
     Format(authHeader, sizeof(authHeader), "Bot %s", g_sBotToken);
     
     request.SetHeader("Authorization", authHeader);
-    request.SetHeader("User-Agent", "SourceMod-Discord-Bridge/1.0");
+    request.SetHeader("User-Agent", "SourceCord/1.0");
     
     request.Get(OnDiscordRolesResponse, pack);
 }
@@ -941,11 +919,11 @@ void SendWebhookWithEscaping(const char[] username, const char[] content, const 
     
     HTTPRequest request = new HTTPRequest(webhookUrl);
     request.SetHeader("Content-Type", "application/json");
-    request.SetHeader("User-Agent", "SourceMod-Discord-Bridge/1.0");
+    request.SetHeader("User-Agent", "SourceCord/1.0");
     request.Post(payload, OnWebhookResponse);
 }
 
-public void OnWebhookResponse(HTTPResponse response, any value) {
+public void OnWebhookResponse(HTTPResponse response) {
     if (response.Status == HTTPStatus_NoContent || response.Status == HTTPStatus_OK) {
         return; // success
     }
