@@ -101,6 +101,13 @@ public void OnPluginStart() {
 }
 
 public void OnConfigsExecuted() {
+    // execute custom config file if specified
+    char configFile[64];
+    g_cvConfigFile.GetString(configFile, sizeof(configFile));
+    if (strlen(configFile) > 0 && !StrEqual(configFile, "sourcecord")) {
+        ServerCommand("exec sourcemod/%s.cfg", configFile);
+    }
+    
     LoadConfig();
 }
 
@@ -170,7 +177,6 @@ public Action Timer_CheckDiscord(Handle timer) {
     
     request.SetHeader("Authorization", authHeader);
     request.SetHeader("Accept", "application/json");
-    request.SetHeader("Connection", "close");
     char userAgent[64];
     Format(userAgent, sizeof(userAgent), "SourceCord/%s", PLUGIN_VERSION);
     request.SetHeader("User-Agent", userAgent);
