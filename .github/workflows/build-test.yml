@@ -1,0 +1,69 @@
+name: Test Build
+
+on:
+  pull_request:
+    branches: [ master, main ]
+  push:
+    branches: [ master, main ]
+  workflow_dispatch:
+
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Get version from source
+      id: get_version
+      run: |
+        VERSION=$(grep -oP '#define PLUGIN_VERSION "\K[^"]+' sourcecord.sp)
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Version found: $VERSION"
+
+    - name: Setup SourceMod
+      run: |
+        wget -q https://sm.alliedmods.net/smdrop/1.11/sourcemod-1.11.0-git6968-linux.tar.gz
+        tar -xzf sourcemod-1.11.0-git6968-linux.tar.gz
+        
+        mkdir -p dependencies/sourcemod/addons/sourcemod/scripting/include
+        cp -r addons/sourcemod/scripting/include/* dependencies/sourcemod/addons/sourcemod/scripting/include/
+        
+        chmod +x addons/sourcemod/scripting/spcomp
+
+    - name: Install dependencies
+      run: |
+        # install ripext
+        cd dependencies/sourcemod/addons/sourcemod/scripting/include
+        wget -q https://raw.githubusercontent.com/ErikMinekus/sm-ripext/master/pawn/scripting/include/ripext.inc
+        
+        # install morecolors
+        wget -q https://raw.githubusercontent.com/Dr-McKay/sourcemod-plugins/master/scripting/include/morecolors.inc
+
+    - name: Compile plugin
+      run: |
+        cp sourcecord.sp addons/sourcemod/scripting/
+        
+        cd addons/sourcemod/scripting
+        echo "Compiling sourcecord.sp..."
+        ./spcomp -i../../../dependencies/sourcemod/addons/sourcemod/scripting/include sourcecord.sp -v
+        
+        if [ ! -f sourcecord.smx ]; then
+          echo "Compilation failed!!!"
+          exit 1
+        fi
+        
+        echo "Compilation successful"
+        ls -la sourcecord.smx
+        
+        SIZE=$(stat -c%s sourcecord.smx)
+        echo "Compiled size: ${SIZE} bytes"
+
+    - name: Upload test artifacts
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-build-sourcecord-${{ steps.get_version.outputs.version }}
+        path: addons/sourcemod/scripting/sourcecord.smx
+        retention-days: 7

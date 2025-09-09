@@ -1,0 +1,110 @@
+name: Build and Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build'
+        required: true
+        default: 'manual'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Get version from source
+      id: get_version
+      run: |
+        VERSION=$(grep -oP '#define PLUGIN_VERSION "\K[^"]+' sourcecord.sp)
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Version found: $VERSION"
+
+    - name: Setup SourceMod
+      run: |
+        wget -q https://sm.alliedmods.net/smdrop/1.11/sourcemod-1.11.0-git6968-linux.tar.gz
+        tar -xzf sourcemod-1.11.0-git6968-linux.tar.gz
+        
+        mkdir -p dependencies/sourcemod/addons/sourcemod/scripting/include
+        cp -r addons/sourcemod/scripting/include/* dependencies/sourcemod/addons/sourcemod/scripting/include/
+        
+        chmod +x addons/sourcemod/scripting/spcomp
+
+    - name: Install dependencies
+      run: |
+        # install ripext
+        cd dependencies/sourcemod/addons/sourcemod/scripting/include
+        wget -q https://raw.githubusercontent.com/ErikMinekus/sm-ripext/master/pawn/scripting/include/ripext.inc
+        
+        # install morecolors
+        wget -q https://raw.githubusercontent.com/Dr-McKay/sourcemod-plugins/master/scripting/include/morecolors.inc
+
+    - name: Compile plugin
+      run: |
+        cp sourcecord.sp addons/sourcemod/scripting/
+        
+        cd addons/sourcemod/scripting
+        ./spcomp -i../../../dependencies/sourcemod/addons/sourcemod/scripting/include sourcecord.sp
+        
+        if [ ! -f sourcecord.smx ]; then
+          echo "Compilation failed!!!"
+          exit 1
+        fi
+        
+        echo "Compilation successful"
+        ls -la sourcecord.smx
+
+    - name: Create release package
+      run: |
+        mkdir -p release
+        cp addons/sourcemod/scripting/sourcecord.smx release/
+        
+        cat > release/README.txt << 'EOF'
+        SourceCord v${{ steps.get_version.outputs.version }}
+        Discord chat integration for Source Engine games
+        
+        Installation:
+        1. Upload sourcecord.smx to sourcemod/plugins/
+        2. Configure the plugin using the convars in your server.cfg:
+           - sc_bot_token "your_bot_token"
+           - sc_channel_id "your_channel_id"
+           - sc_webhook_url "your_webhook_url"
+           - sc_steam_key "your_steam_api_key" (optional)
+           - sc_guild_id "your_guild_id" (for role colors)
+        
+        For more information, visit: https://github.com/${{ github.repository }}
+        EOF
+
+    - name: Upload to release
+      if: github.event_name == 'release'
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./release/sourcecord.smx
+        asset_name: sourcecord.smx
+        asset_content_type: application/octet-stream
+
+    - name: Upload README to release
+      if: github.event_name == 'release'
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./release/README.txt
+        asset_name: README.txt
+        asset_content_type: text/plain
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: sourcecord-v${{ steps.get_version.outputs.version }}
+        path: release/
+        retention-days: 30
