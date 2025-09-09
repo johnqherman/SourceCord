@@ -62,7 +62,7 @@ jobs:
 
     - name: Upload test artifacts
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: test-build-sourcecord-${{ steps.get_version.outputs.version }}
         path: addons/sourcemod/scripting/sourcecord.smx

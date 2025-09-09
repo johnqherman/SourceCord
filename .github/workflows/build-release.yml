@@ -103,7 +103,7 @@ jobs:
         asset_content_type: text/plain
 
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: sourcecord-v${{ steps.get_version.outputs.version }}
         path: release/
