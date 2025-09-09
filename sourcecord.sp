@@ -6,6 +6,10 @@
 #include <ripext>
 
 #define PLUGIN_VERSION "0.1.4-alpha"
+#define AVATAR_CACHE_TTL 1800.0  // 30 minutes
+#define DISCORD_NICK_TTL 1800.0  // 30 minutes
+#define DISCORD_COLOR_TTL 3600.0  // 1 hour 
+#define DISCORD_LONG_TTL 86400.0  // 24 hours
 
 public Plugin myinfo = {
     name = "SourceCord",
@@ -41,6 +45,8 @@ bool g_bUseRoleColors;
 bool g_bUseNicknames;
 StringMap g_hUserColorCache;
 StringMap g_hUserNameCache;
+StringMap g_hUserNickCache;
+StringMap g_hUserAvatarCache;
 StringMap g_hChannelNameCache;
 StringMap g_hRoleNameCache;
 
@@ -66,6 +72,8 @@ public void OnPluginStart() {
     // init caches
     g_hUserColorCache = new StringMap();
     g_hUserNameCache = new StringMap();
+    g_hUserNickCache = new StringMap();
+    g_hUserAvatarCache = new StringMap();
     g_hChannelNameCache = new StringMap();
     g_hRoleNameCache = new StringMap();
     
@@ -279,14 +287,16 @@ public void OnDiscordResponse(HTTPResponse response, any data) {
     
     static int cleanupCounter = 0;
     cleanupCounter++;
-    if (cleanupCounter >= 100) { // cleanup every 100 successful responses
+
+    // cleanup every 100 successful responses
+    if (cleanupCounter >= 100) {
         CleanupProcessedMessages();
         cleanupCounter = 0;
     }
 }
 
 void CleanupProcessedMessages() {
-    // keep only the most recent 1000 processed message IDs using LRU eviction
+    // keep only the most recent 1000 processed IDs
     int maxCacheSize = 1000;
     if (g_hProcessedMessages.Size <= maxCacheSize) {
         return;
@@ -345,8 +355,8 @@ void ProcessMessageQueue() {
         return;
     }
     
-    // process <= 10 messages per batch
-    int processCount = (queueSize > 10) ? 10 : queueSize;
+    // process <= 5 messages per batch
+    int processCount = (queueSize > 5) ? 5 : queueSize;
     
     for (int i = 0; i < processCount; i++) {
         char messageData[512];
@@ -477,7 +487,7 @@ void ProcessDiscordMentions(const char[] userId, const char[] username, const ch
             CopySubstring(processedContent, idStart, idLen, mentionId, sizeof(mentionId));
             
             char cachedName[64];
-            if (g_hUserNameCache.GetString(mentionId, cachedName, sizeof(cachedName))) {
+            if (GetCachedDiscordData(g_hUserNameCache, mentionId, cachedName, sizeof(cachedName), DISCORD_LONG_TTL)) {
                 Format(mentionPattern, sizeof(mentionPattern), "<@%s>", mentionId);
                 char replacement[96];
                 Format(replacement, sizeof(replacement), "@%s", cachedName);
@@ -506,7 +516,7 @@ void ProcessDiscordMentions(const char[] userId, const char[] username, const ch
             CopySubstring(processedContent, idStart, idLen, mentionId, sizeof(mentionId));
             
             char cachedName[64];
-            if (g_hChannelNameCache.GetString(mentionId, cachedName, sizeof(cachedName))) {
+            if (GetCachedDiscordData(g_hChannelNameCache, mentionId, cachedName, sizeof(cachedName), DISCORD_LONG_TTL)) {
                 Format(mentionPattern, sizeof(mentionPattern), "<#%s>", mentionId);
                 char replacement[96];
                 Format(replacement, sizeof(replacement), "#%s", cachedName);
@@ -535,7 +545,7 @@ void ProcessDiscordMentions(const char[] userId, const char[] username, const ch
             CopySubstring(processedContent, idStart, idLen, mentionId, sizeof(mentionId));
             
             char cachedRoleName[64];
-            if (g_hRoleNameCache.GetString(mentionId, cachedRoleName, sizeof(cachedRoleName))) {
+            if (GetCachedDiscordData(g_hRoleNameCache, mentionId, cachedRoleName, sizeof(cachedRoleName), DISCORD_LONG_TTL)) {
                 Format(mentionPattern, sizeof(mentionPattern), "<@&%s>", mentionId);
                 char replacement[96];
                 Format(replacement, sizeof(replacement), "@%s", cachedRoleName);
@@ -631,7 +641,7 @@ void ProcessDiscordMentions(const char[] userId, const char[] username, const ch
 
 void GetDiscordUserName(const char[] mentionUserId, const char[] originalUserId, const char[] username, const char[] content) {
     if (strlen(g_sBotToken) == 0 || strlen(g_sGuildId) == 0) {
-        g_hUserNameCache.SetString(mentionUserId, "User");
+        SetCachedDiscordData(g_hUserNameCache, mentionUserId, "User");
         ProcessDiscordMentions(originalUserId, username, content);
         return;
     }
@@ -686,13 +696,75 @@ public void OnDiscordUserResponse(HTTPResponse response, DataPack pack) {
         delete member;
     }
     
-    g_hUserNameCache.SetString(mentionUserId, displayName);
+    SetCachedDiscordData(g_hUserNameCache, mentionUserId, displayName);
     ProcessDiscordMentions(originalUserId, username, content);
+}
+
+void GetDiscordUserNickname(const char[] userId, const char[] username, const char[] content) {
+    if (strlen(g_sBotToken) == 0 || strlen(g_sGuildId) == 0) {
+        SetCachedDiscordData(g_hUserNickCache, userId, username);
+        GetDiscordRoleColor(userId, username, content);
+        return;
+    }
+    
+    char url[256];
+    Format(url, sizeof(url), "https://discord.com/api/v10/guilds/%s/members/%s", g_sGuildId, userId);
+    
+    DataPack pack = new DataPack();
+    pack.WriteString(userId);
+    pack.WriteString(username);
+    pack.WriteString(content);
+    
+    HTTPRequest request = new HTTPRequest(url);
+    
+    char authHeader[256];
+    Format(authHeader, sizeof(authHeader), "Bot %s", g_sBotToken);
+    
+    request.SetHeader("Authorization", authHeader);
+    char userAgent[64];
+    Format(userAgent, sizeof(userAgent), "SourceCord/%s", PLUGIN_VERSION);
+    request.SetHeader("User-Agent", userAgent);
+    
+    request.Get(OnDiscordUserNicknameResponse, pack);
+}
+
+public void OnDiscordUserNicknameResponse(HTTPResponse response, DataPack pack) {
+    pack.Reset();
+    
+    char userId[32], username[64], content[512];
+    pack.ReadString(userId, sizeof(userId));
+    pack.ReadString(username, sizeof(username));
+    pack.ReadString(content, sizeof(content));
+    delete pack;
+    
+    char displayName[64];
+    strcopy(displayName, sizeof(displayName), username);
+    
+    if (response.Status == HTTPStatus_OK && response.Data != null) {
+        JSONObject member = view_as<JSONObject>(response.Data);
+        
+        // handle nicknames
+        if (!member.GetString("nick", displayName, sizeof(displayName)) || strlen(displayName) == 0) {
+            JSONObject user = view_as<JSONObject>(member.Get("user"));
+            if (user != null) {
+                if (!user.GetString("display_name", displayName, sizeof(displayName)) || strlen(displayName) == 0) {
+                    if (!user.GetString("global_name", displayName, sizeof(displayName)) || strlen(displayName) == 0) {
+                        user.GetString("username", displayName, sizeof(displayName));
+                    }
+                }
+                delete user;
+            }
+        }
+        delete member;
+    }
+    
+    SetCachedDiscordData(g_hUserNickCache, userId, displayName);
+    GetDiscordRoleColor(userId, displayName, content);
 }
 
 void GetDiscordChannelName(const char[] channelId, const char[] originalUserId, const char[] username, const char[] content) {
     if (strlen(g_sBotToken) == 0) {
-        g_hChannelNameCache.SetString(channelId, "channel");
+        SetCachedDiscordData(g_hChannelNameCache, channelId, "channel");
         ProcessDiscordMentions(originalUserId, username, content);
         return;
     }
@@ -737,13 +809,13 @@ public void OnDiscordChannelResponse(HTTPResponse response, DataPack pack) {
         delete channel;
     }
     
-    g_hChannelNameCache.SetString(channelId, channelName);
+    SetCachedDiscordData(g_hChannelNameCache, channelId, channelName);
     ProcessDiscordMentions(originalUserId, username, content);
 }
 
 void GetDiscordRoleName(const char[] roleId, const char[] originalUserId, const char[] username, const char[] content) {
     if (strlen(g_sBotToken) == 0 || strlen(g_sGuildId) == 0) {
-        g_hRoleNameCache.SetString(roleId, "Role");
+        SetCachedDiscordData(g_hRoleNameCache, roleId, "Role");
         ProcessDiscordMentions(originalUserId, username, content);
         return;
     }
@@ -804,22 +876,44 @@ public void OnDiscordRoleNameResponse(HTTPResponse response, DataPack pack) {
         }
     }
     
-    g_hRoleNameCache.SetString(roleId, roleName);
+    SetCachedDiscordData(g_hRoleNameCache, roleId, roleName);
     ProcessDiscordMentions(originalUserId, username, content);
 }
 
 void GetDiscordRoleColor(const char[] userId, const char[] username, const char[] content) {
+    bool needsNickname = g_bUseNicknames && strlen(g_sGuildId) > 0 && strlen(g_sBotToken) > 0;
+    bool hasNickname = false;
+    char cachedNick[64];
+    
+    if (needsNickname) {
+        hasNickname = GetCachedDiscordData(g_hUserNickCache, userId, cachedNick, sizeof(cachedNick), DISCORD_NICK_TTL);
+    }
+    
+    // get display name
+    char displayName[64];
+    if (needsNickname && hasNickname && strlen(cachedNick) > 0) {
+        strcopy(displayName, sizeof(displayName), cachedNick);
+    } else {
+        strcopy(displayName, sizeof(displayName), username);
+    }
+    
+    // if nicknames are enabled but not cached, and we have required config, fetch
+    if (needsNickname && !hasNickname) {
+        GetDiscordUserNickname(userId, username, content);
+        return;
+    }
+    
     if (!g_bUseRoleColors || strlen(g_sGuildId) == 0 || strlen(g_sBotToken) == 0) {
-        PrintToChatAll("\x075865F2[Discord] %s\x01 :  %s", username, content);
+        PrintToChatAll("\x075865F2[Discord] %s\x01 :  %s", displayName, content);
         return;
     }
     
     char cachedColor[8];
-    if (g_hUserColorCache.GetString(userId, cachedColor, sizeof(cachedColor))) {
+    if (GetCachedDiscordData(g_hUserColorCache, userId, cachedColor, sizeof(cachedColor), DISCORD_COLOR_TTL)) {
         if (strlen(cachedColor) > 0) {
-            PrintToChatAll("\x075865F2[Discord] %s%s\x01 :  %s", cachedColor, username, content);
+            PrintToChatAll("\x075865F2[Discord] %s%s\x01 :  %s", cachedColor, displayName, content);
         } else {
-            PrintToChatAll("\x075865F2[Discord] %s\x01 :  %s", username, content);
+            PrintToChatAll("\x075865F2[Discord] %s\x01 :  %s", displayName, content);
         }
         return;
     }
@@ -874,6 +968,8 @@ public void OnDiscordMemberResponse(HTTPResponse response, DataPack pack) {
                     delete user;
                 }
             }
+
+            SetCachedDiscordData(g_hUserNickCache, userId, displayName);
         } else {
             JSONObject user = view_as<JSONObject>(member.Get("user"));
             if (user != null) {
@@ -896,7 +992,7 @@ public void OnDiscordMemberResponse(HTTPResponse response, DataPack pack) {
         delete member;
     }
     
-    g_hUserColorCache.SetString(userId, colorPrefix);
+    SetCachedDiscordData(g_hUserColorCache, userId, colorPrefix);
     
     if (strlen(colorPrefix) > 0) {
         PrintToChatAll("\x075865F2[Discord] %s%s\x01 :  %s", colorPrefix, displayName, content);
@@ -907,7 +1003,7 @@ public void OnDiscordMemberResponse(HTTPResponse response, DataPack pack) {
 
 void GetTopRoleColor(JSONArray roleIds, const char[] userId, const char[] username, const char[] content) {
     if (roleIds == null || roleIds.Length == 0) {
-        g_hUserColorCache.SetString(userId, "");
+        SetCachedDiscordData(g_hUserColorCache, userId, "");
         PrintToChatAll("\x075865F2[Discord] %s\x01 :  %s", username, content);
         return;
     }
@@ -988,7 +1084,7 @@ public void OnDiscordRolesResponse(HTTPResponse response, DataPack pack) {
     
     delete userRoleIds;
 
-    g_hUserColorCache.SetString(userId, colorPrefix);
+    SetCachedDiscordData(g_hUserColorCache, userId, colorPrefix);
     
     if (strlen(colorPrefix) > 0) {
         PrintToChatAll("\x075865F2[Discord] %s%s\x01 :  %s", colorPrefix, username, content);
@@ -1029,10 +1125,18 @@ void SendToDiscord(int client, const char[] message, bool isTeamChat = false) {
 }
 
 void GetSteamAvatar(const char[] steamId64, const char[] webhookUsername, const char[] message) {
+    // check avatar cache first
+    char cachedAvatar[256];
+    if (GetCachedAvatar(steamId64, cachedAvatar, sizeof(cachedAvatar))) {
+        SendWebhook(webhookUsername, message, cachedAvatar);
+        return;
+    }
+    
     char url[256];
     Format(url, sizeof(url), "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=%s&steamids=%s", g_sSteamApiKey, steamId64);
     
     DataPack pack = new DataPack();
+    pack.WriteString(steamId64);
     pack.WriteString(webhookUsername);
     pack.WriteString(message);
     
@@ -1041,10 +1145,18 @@ void GetSteamAvatar(const char[] steamId64, const char[] webhookUsername, const 
 }
 
 void GetSteamAvatarConnect(const char[] steamId64, const char[] message) {
+    // check avatar cache first
+    char cachedAvatar[256];
+    if (GetCachedAvatar(steamId64, cachedAvatar, sizeof(cachedAvatar))) {
+        SendWebhookWithEscaping("Server", message, cachedAvatar, false);
+        return;
+    }
+    
     char url[256];
     Format(url, sizeof(url), "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=%s&steamids=%s", g_sSteamApiKey, steamId64);
     
     DataPack pack = new DataPack();
+    pack.WriteString(steamId64);
     pack.WriteString(message);
     
     HTTPRequest request = new HTTPRequest(url);
@@ -1052,10 +1164,18 @@ void GetSteamAvatarConnect(const char[] steamId64, const char[] message) {
 }
 
 void GetSteamAvatarDisconnect(const char[] steamId64, const char[] message) {
+    // check avatar cache first
+    char cachedAvatar[256];
+    if (GetCachedAvatar(steamId64, cachedAvatar, sizeof(cachedAvatar))) {
+        SendWebhookWithEscaping("Server", message, cachedAvatar, false);
+        return;
+    }
+    
     char url[256];
     Format(url, sizeof(url), "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=%s&steamids=%s", g_sSteamApiKey, steamId64);
     
     DataPack pack = new DataPack();
+    pack.WriteString(steamId64);
     pack.WriteString(message);
     
     HTTPRequest request = new HTTPRequest(url);
@@ -1065,7 +1185,8 @@ void GetSteamAvatarDisconnect(const char[] steamId64, const char[] message) {
 public void OnSteamResponse(HTTPResponse response, DataPack pack) {
     pack.Reset();
     
-    char webhookUsername[96], message[512], avatarUrl[256] = "";
+    char steamId64[32], webhookUsername[96], message[512], avatarUrl[256] = "";
+    pack.ReadString(steamId64, sizeof(steamId64));
     pack.ReadString(webhookUsername, sizeof(webhookUsername));
     pack.ReadString(message, sizeof(message));
     delete pack;
@@ -1092,13 +1213,16 @@ public void OnSteamResponse(HTTPResponse response, DataPack pack) {
         delete data;
     }
     
+    SetCachedAvatar(steamId64, avatarUrl);
+    
     SendWebhook(webhookUsername, message, avatarUrl);
 }
 
 public void OnSteamAvatarConnect(HTTPResponse response, DataPack pack) {
     pack.Reset();
     
-    char message[512], avatarUrl[256] = "";
+    char steamId64[32], message[512], avatarUrl[256] = "";
+    pack.ReadString(steamId64, sizeof(steamId64));
     pack.ReadString(message, sizeof(message));
     delete pack;
     
@@ -1123,6 +1247,8 @@ public void OnSteamAvatarConnect(HTTPResponse response, DataPack pack) {
         }
         delete data;
     }
+    
+    SetCachedAvatar(steamId64, avatarUrl);
     
     SendWebhookWithEscaping("Server", message, avatarUrl, false);
 }
@@ -1130,7 +1256,8 @@ public void OnSteamAvatarConnect(HTTPResponse response, DataPack pack) {
 public void OnSteamAvatarDisconnect(HTTPResponse response, DataPack pack) {
     pack.Reset();
     
-    char message[512], avatarUrl[256] = "";
+    char steamId64[32], message[512], avatarUrl[256] = "";
+    pack.ReadString(steamId64, sizeof(steamId64));
     pack.ReadString(message, sizeof(message));
     delete pack;
     
@@ -1157,6 +1284,8 @@ public void OnSteamAvatarDisconnect(HTTPResponse response, DataPack pack) {
 
         delete data;
     }
+    
+    SetCachedAvatar(steamId64, avatarUrl);
     
     SendWebhookWithEscaping("Server", message, avatarUrl, false);
 }
@@ -1276,6 +1405,12 @@ public void OnPluginEnd() {
     if (g_hUserNameCache != null) {
         delete g_hUserNameCache;
     }
+    if (g_hUserNickCache != null) {
+        delete g_hUserNickCache;
+    }
+    if (g_hUserAvatarCache != null) {
+        delete g_hUserAvatarCache;
+    }
     if (g_hChannelNameCache != null) {
         delete g_hChannelNameCache;
     }
@@ -1295,4 +1430,74 @@ public void OnPluginEnd() {
 
 bool IsValidClient(int client) {
     return (client > 0 && client <= MaxClients && IsClientConnected(client) && IsClientInGame(client) && !IsFakeClient(client));
+}
+
+bool GetCachedAvatar(const char[] steamId64, char[] avatarUrl, int maxlen) {
+    char cachedData[512];
+    if (!g_hUserAvatarCache.GetString(steamId64, cachedData, sizeof(cachedData))) {
+        return false;
+    }
+    
+    // parse cached data: "avatarUrl|timestamp"
+    char parts[2][256];
+    if (ExplodeString(cachedData, "|", parts, sizeof(parts), sizeof(parts[])) != 2) {
+        g_hUserAvatarCache.Remove(steamId64);
+        return false;
+    }
+    
+    float cachedTime = StringToFloat(parts[1]);
+    float currentTime = GetGameTime();
+    
+    // check if expired
+    if (currentTime - cachedTime > AVATAR_CACHE_TTL) {
+        g_hUserAvatarCache.Remove(steamId64);
+        return false;
+    }
+    
+    strcopy(avatarUrl, maxlen, parts[0]);
+    return strlen(avatarUrl) > 0;
+}
+
+void SetCachedAvatar(const char[] steamId64, const char[] avatarUrl) {
+    if (strlen(avatarUrl) == 0) return;
+    
+    char cachedData[512];
+    float currentTime = GetGameTime();
+    Format(cachedData, sizeof(cachedData), "%s|%.2f", avatarUrl, currentTime);
+    g_hUserAvatarCache.SetString(steamId64, cachedData);
+}
+
+bool GetCachedDiscordData(StringMap cache, const char[] key, char[] data, int maxlen, float ttl) {
+    char cachedData[512];
+    if (!cache.GetString(key, cachedData, sizeof(cachedData))) {
+        return false;
+    }
+    
+    // parse cached data: "data|timestamp"
+    char parts[2][256];
+    if (ExplodeString(cachedData, "|", parts, sizeof(parts), sizeof(parts[])) != 2) {
+        cache.Remove(key);
+        return false;
+    }
+    
+    float cachedTime = StringToFloat(parts[1]);
+    float currentTime = GetGameTime();
+    
+    // check if expired
+    if (currentTime - cachedTime > ttl) {
+        cache.Remove(key);
+        return false;
+    }
+    
+    strcopy(data, maxlen, parts[0]);
+    return strlen(data) > 0;
+}
+
+void SetCachedDiscordData(StringMap cache, const char[] key, const char[] data) {
+    if (strlen(data) == 0) return;
+    
+    char cachedData[512];
+    float currentTime = GetGameTime();
+    Format(cachedData, sizeof(cachedData), "%s|%.2f", data, currentTime);
+    cache.SetString(key, cachedData);
 }
