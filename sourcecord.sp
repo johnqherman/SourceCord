@@ -148,14 +148,16 @@ public Action Timer_CheckDiscord(Handle timer) {
     Format(authHeader, sizeof(authHeader), "Bot %s", g_sBotToken);
     
     request.SetHeader("Authorization", authHeader);
-    request.SetHeader("User-Agent", "SourceCord/1.0");
+    char userAgent[64];
+    Format(userAgent, sizeof(userAgent), "SourceCord/%s", PLUGIN_VERSION);
+    request.SetHeader("User-Agent", userAgent);
     
-    request.Get(OnDiscordResponse);
+    request.Get(OnDiscordResponse, INVALID_HANDLE);
     
     return Plugin_Continue;
 }
 
-public void OnDiscordResponse(HTTPResponse response) {
+public void OnDiscordResponse(HTTPResponse response, any data) {
     if (response.Status != HTTPStatus_OK) {
         if (response.Status == HTTPStatus_Unauthorized) {
             LogError("Discord API: Unauthorized - check your bot token");
@@ -505,7 +507,9 @@ void GetDiscordUserName(const char[] mentionUserId, const char[] originalUserId,
     Format(authHeader, sizeof(authHeader), "Bot %s", g_sBotToken);
     
     request.SetHeader("Authorization", authHeader);
-    request.SetHeader("User-Agent", "SourceCord/1.0");
+    char userAgent[64];
+    Format(userAgent, sizeof(userAgent), "SourceCord/%s", PLUGIN_VERSION);
+    request.SetHeader("User-Agent", userAgent);
     
     request.Get(OnDiscordUserResponse, pack);
 }
@@ -564,7 +568,9 @@ void GetDiscordChannelName(const char[] channelId, const char[] originalUserId, 
     Format(authHeader, sizeof(authHeader), "Bot %s", g_sBotToken);
     
     request.SetHeader("Authorization", authHeader);
-    request.SetHeader("User-Agent", "SourceCord/1.0");
+    char userAgent[64];
+    Format(userAgent, sizeof(userAgent), "SourceCord/%s", PLUGIN_VERSION);
+    request.SetHeader("User-Agent", userAgent);
     
     request.Get(OnDiscordChannelResponse, pack);
 }
@@ -613,7 +619,9 @@ void GetDiscordRoleName(const char[] roleId, const char[] originalUserId, const 
     Format(authHeader, sizeof(authHeader), "Bot %s", g_sBotToken);
     
     request.SetHeader("Authorization", authHeader);
-    request.SetHeader("User-Agent", "SourceCord/1.0");
+    char userAgent[64];
+    Format(userAgent, sizeof(userAgent), "SourceCord/%s", PLUGIN_VERSION);
+    request.SetHeader("User-Agent", userAgent);
     
     request.Get(OnDiscordRoleNameResponse, pack);
 }
@@ -686,7 +694,9 @@ void GetDiscordRoleColor(const char[] userId, const char[] username, const char[
     Format(authHeader, sizeof(authHeader), "Bot %s", g_sBotToken);
     
     request.SetHeader("Authorization", authHeader);
-    request.SetHeader("User-Agent", "SourceCord/1.0");
+    char userAgent[64];
+    Format(userAgent, sizeof(userAgent), "SourceCord/%s", PLUGIN_VERSION);
+    request.SetHeader("User-Agent", userAgent);
     
     request.Get(OnDiscordMemberResponse, pack);
 }
@@ -772,7 +782,9 @@ void GetTopRoleColor(JSONArray roleIds, const char[] userId, const char[] userna
     Format(authHeader, sizeof(authHeader), "Bot %s", g_sBotToken);
     
     request.SetHeader("Authorization", authHeader);
-    request.SetHeader("User-Agent", "SourceCord/1.0");
+    char userAgent[64];
+    Format(userAgent, sizeof(userAgent), "SourceCord/%s", PLUGIN_VERSION);
+    request.SetHeader("User-Agent", userAgent);
     
     request.Get(OnDiscordRolesResponse, pack);
 }
@@ -945,11 +957,13 @@ void SendWebhookWithEscaping(const char[] username, const char[] content, const 
     
     HTTPRequest request = new HTTPRequest(webhookUrl);
     request.SetHeader("Content-Type", "application/json");
-    request.SetHeader("User-Agent", "SourceCord/1.0");
-    request.Post(payload, OnWebhookResponse);
+    char userAgent[64];
+    Format(userAgent, sizeof(userAgent), "SourceCord/%s", PLUGIN_VERSION);
+    request.SetHeader("User-Agent", userAgent);
+    request.Post(payload, OnWebhookResponse, INVALID_HANDLE);
 }
 
-public void OnWebhookResponse(HTTPResponse response) {
+public void OnWebhookResponse(HTTPResponse response, any data) {
     if (response.Status == HTTPStatus_NoContent || response.Status == HTTPStatus_OK) {
         return; // success
     }
