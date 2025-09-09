@@ -35,7 +35,7 @@ jobs:
         wget -q https://raw.githubusercontent.com/ErikMinekus/sm-ripext/master/pawn/scripting/include/ripext.inc
         
         # install morecolors
-        wget -q https://raw.githubusercontent.com/Dr-McKay/sourcemod-plugins/master/scripting/include/morecolors.inc
+        wget -q https://raw.githubusercontent.com/DoctorMcKay/sourcemod-plugins/master/scripting/include/morecolors.inc
 
     - name: Compile plugin
       run: |
