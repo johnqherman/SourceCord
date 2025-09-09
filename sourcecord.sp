@@ -5,7 +5,7 @@
 #include <sdktools>
 #include <ripext>
 
-#define PLUGIN_VERSION "0.1.0-alpha"
+#define PLUGIN_VERSION "0.1.2-alpha"
 
 public Plugin myinfo = {
     name = "SourceCord",
