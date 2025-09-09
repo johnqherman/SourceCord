@@ -93,20 +93,18 @@ public void OnPluginStart() {
     g_cvUseRoleColors.AddChangeHook(OnConVarChanged);
     g_cvUseNicknames.AddChangeHook(OnConVarChanged);
     
-}
-
-public void OnConfigsExecuted() {
+    // create config file if it doesn't exist
     char configFile[64];
     g_cvConfigFile.GetString(configFile, sizeof(configFile));
     AutoExecConfig(true, configFile);
+    
+}
+
+public void OnConfigsExecuted() {
+    LoadConfig();
 }
 
 public void OnMapStart() {
-    char configFile[64];
-    g_cvConfigFile.GetString(configFile, sizeof(configFile));
-    ServerCommand("exec sourcemod/%s.cfg", configFile);
-    
-    LoadConfig();
     StartTimer();
 }
 
