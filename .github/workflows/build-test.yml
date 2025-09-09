@@ -43,7 +43,7 @@ jobs:
         
         cd addons/sourcemod/scripting
         echo "Compiling sourcecord.sp..."
-        ./spcomp -iinclude sourcecord.sp -v
+        ./spcomp -iinclude sourcecord.sp
         
         if [ ! -f sourcecord.smx ]; then
           echo "Compilation failed!!!"
