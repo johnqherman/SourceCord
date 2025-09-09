@@ -98,7 +98,7 @@ public void OnPluginStart() {
 public void OnConfigsExecuted() {
     char configFile[64];
     g_cvConfigFile.GetString(configFile, sizeof(configFile));
-    AutoExecConfig(false, configFile);
+    AutoExecConfig(true, configFile);
 }
 
 public void OnMapStart() {
