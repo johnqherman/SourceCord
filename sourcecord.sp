@@ -202,7 +202,7 @@ public void OnDiscordResponse(HTTPResponse response, any data) {
         return;
     }
     
-    // process messages in reverse order (oldest first) since Discord returns newest first
+    // process messages in reverse order (oldest first)
     int messageCount = messages.Length;
     char latestMessageId[32];
     
@@ -215,7 +215,7 @@ public void OnDiscordResponse(HTTPResponse response, any data) {
         char messageId[32];
         message.GetString("id", messageId, sizeof(messageId));
         
-        // skip if we've already processed this message
+        // skip if already processed
         bool alreadyProcessed;
         if (g_hProcessedMessages.GetValue(messageId, alreadyProcessed)) {
             delete message;
@@ -263,7 +263,7 @@ public void OnDiscordResponse(HTTPResponse response, any data) {
         }
     }
     
-    // update last message ID to the newest message we received
+    // update last message ID to newest message
     if (strlen(latestMessageId) > 0) {
         strcopy(g_sLastMessageId, sizeof(g_sLastMessageId), latestMessageId);
     }
@@ -271,7 +271,6 @@ public void OnDiscordResponse(HTTPResponse response, any data) {
     delete messages;
     ProcessMessageQueue();
     
-    // periodically clean up old processed message IDs to prevent memory bloat
     static int cleanupCounter = 0;
     cleanupCounter++;
     if (cleanupCounter >= 100) { // cleanup every 100 successful responses
@@ -293,7 +292,7 @@ void CleanupProcessedMessages() {
     LogMessage("LRU cleanup: removing %d oldest entries (current size: %d -> target: %d)", 
         entriesToRemove, currentSize, maxCacheSize);
     
-    // remove oldest entries first (FIFO from the order tracking array)
+    // FIFO from order tracking array
     for (int i = 0; i < entriesToRemove && g_hMessageIdOrder.Length > 0; i++) {
         char oldestId[32];
         g_hMessageIdOrder.GetString(0, oldestId, sizeof(oldestId));
@@ -317,10 +316,10 @@ void HandleDiscordError(HTTPStatus status) {
         LogError("Discord API request failed with status: %d", view_as<int>(status));
     }
     
-    // implement exponential backoff
+    // exponential backoff
     g_iFailedRequests++;
     float backoffDelay = Pow(2.0, float(g_iFailedRequests - 1)) * g_fUpdateInterval;
-    if (backoffDelay > 60.0) { // max 60 second delay
+    if (backoffDelay > 60.0) { // 60s max
         backoffDelay = 60.0;
     }
     
@@ -340,7 +339,7 @@ void ProcessMessageQueue() {
         return;
     }
     
-    // process up to 10 messages per batch to avoid overwhelming the server
+    // process <= 10 messages per batch
     int processCount = (queueSize > 10) ? 10 : queueSize;
     
     for (int i = 0; i < processCount; i++) {
@@ -355,7 +354,7 @@ void ProcessMessageQueue() {
         }
     }
     
-    // if there are still messages queued, process them in next timer cycle
+    // if there are still messages queued, process in next cycle
     if (g_hMessageQueue.Length > 0) {
         LogMessage("Message queue has %d remaining messages, will process next batch in %.1f seconds", 
             g_hMessageQueue.Length, g_fUpdateInterval);
@@ -583,6 +582,7 @@ void ProcessDiscordMentions(const char[] userId, const char[] username, const ch
         }
     }
     
+    // handle animated emojis
     searchStart = 0;
     while ((pos = StrContains(processedContent[searchStart], "<a:", false)) != -1) {
         int actualPos = searchStart + pos;
@@ -669,7 +669,7 @@ public void OnDiscordUserResponse(HTTPResponse response, DataPack pack) {
         JSONObject user = view_as<JSONObject>(member.Get("user"));
         
         if (user != null) {
-            // try display name first, fallback to username
+            // try display name, fallback to username
             if (!user.GetString("display_name", displayName, sizeof(displayName)) || strlen(displayName) == 0) {
                 if (!user.GetString("global_name", displayName, sizeof(displayName)) || strlen(displayName) == 0) {
                     user.GetString("username", displayName, sizeof(displayName));
@@ -855,6 +855,7 @@ public void OnDiscordMemberResponse(HTTPResponse response, DataPack pack) {
     if (response.Status == HTTPStatus_OK && response.Data != null) {
         JSONObject member = view_as<JSONObject>(response.Data);
         
+        // handle nicknames
         if (g_bUseNicknames) {
             if (!member.GetString("nick", displayName, sizeof(displayName)) || strlen(displayName) == 0) {
                 JSONObject user = view_as<JSONObject>(member.Get("user"));
@@ -971,6 +972,7 @@ public void OnDiscordRolesResponse(HTTPResponse response, DataPack pack) {
                 }
             }
             
+            // add role color prefix
             if (topRoleColor > 0) {
                 Format(colorPrefix, sizeof(colorPrefix), "\x07%06X", topRoleColor);
             }
@@ -978,9 +980,8 @@ public void OnDiscordRolesResponse(HTTPResponse response, DataPack pack) {
         }
     }
     
-    // clean up user role IDs
     delete userRoleIds;
-    
+
     g_hUserColorCache.SetString(userId, colorPrefix);
     
     if (strlen(colorPrefix) > 0) {
@@ -1143,9 +1144,11 @@ public void OnSteamAvatarDisconnect(HTTPResponse response, DataPack pack) {
         if (players != null) {
             delete players;
         }
+
         if (responseObj != null) {
             delete responseObj;
         }
+
         delete data;
     }
     
@@ -1159,6 +1162,7 @@ void SendWebhook(const char[] username, const char[] content, const char[] avata
 void SendWebhookWithEscaping(const char[] username, const char[] content, const char[] avatarUrl, bool escapeContent) {
     char webhookUrl[256];
     g_cvWebhookUrl.GetString(webhookUrl, sizeof(webhookUrl));
+    
     if (strlen(webhookUrl) == 0) {
         LogError("Webhook URL is empty!");
         return;
