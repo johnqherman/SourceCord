@@ -4,7 +4,6 @@
 #include <sourcemod>
 #include <sdktools>
 #include <ripext>
-#include <morecolors>
 
 #define PLUGIN_VERSION "1.02"
 
@@ -659,16 +658,16 @@ public void OnDiscordRoleNameResponse(HTTPResponse response, DataPack pack) {
 
 void GetDiscordRoleColor(const char[] userId, const char[] username, const char[] content) {
     if (!g_bUseRoleColors || strlen(g_sGuildId) == 0 || strlen(g_sBotToken) == 0) {
-        MC_PrintToChatAll("\x075865F2[Discord] %s{default} :  %s", username, content);
+        PrintToChatAll("\x075865F2[Discord] %s\x01 :  %s", username, content);
         return;
     }
     
     char cachedColor[8];
     if (g_hUserColorCache.GetString(userId, cachedColor, sizeof(cachedColor))) {
         if (strlen(cachedColor) > 0) {
-            MC_PrintToChatAll("\x075865F2[Discord] %s%s{default} :  %s", cachedColor, username, content);
+            PrintToChatAll("\x075865F2[Discord] %s%s\x01 :  %s", cachedColor, username, content);
         } else {
-            MC_PrintToChatAll("\x075865F2[Discord] %s{default} :  %s", username, content);
+            PrintToChatAll("\x075865F2[Discord] %s\x01 :  %s", username, content);
         }
         return;
     }
@@ -745,16 +744,16 @@ public void OnDiscordMemberResponse(HTTPResponse response, DataPack pack) {
     g_hUserColorCache.SetString(userId, colorPrefix);
     
     if (strlen(colorPrefix) > 0) {
-        MC_PrintToChatAll("\x075865F2[Discord] %s%s{default} :  %s", colorPrefix, displayName, content);
+        PrintToChatAll("\x075865F2[Discord] %s%s\x01 :  %s", colorPrefix, displayName, content);
     } else {
-        MC_PrintToChatAll("\x075865F2[Discord] %s{default} :  %s", displayName, content);
+        PrintToChatAll("\x075865F2[Discord] %s\x01 :  %s", displayName, content);
     }
 }
 
 void GetTopRoleColor(JSONArray roleIds, const char[] userId, const char[] username, const char[] content) {
     if (roleIds == null || roleIds.Length == 0) {
         g_hUserColorCache.SetString(userId, "");
-        MC_PrintToChatAll("\x075865F2[Discord] %s{default} :  %s", username, content);
+        PrintToChatAll("\x075865F2[Discord] %s\x01 :  %s", username, content);
         return;
     }
     
@@ -835,9 +834,9 @@ public void OnDiscordRolesResponse(HTTPResponse response, DataPack pack) {
     g_hUserColorCache.SetString(userId, colorPrefix);
     
     if (strlen(colorPrefix) > 0) {
-        MC_PrintToChatAll("\x075865F2[Discord] %s%s{default} :  %s", colorPrefix, username, content);
+        PrintToChatAll("\x075865F2[Discord] %s%s\x01 :  %s", colorPrefix, username, content);
     } else {
-        MC_PrintToChatAll("\x075865F2[Discord] %s{default} :  %s", username, content);
+        PrintToChatAll("\x075865F2[Discord] %s\x01 :  %s", username, content);
     }
 }
 

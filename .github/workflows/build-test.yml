@@ -37,9 +37,6 @@ jobs:
         mkdir -p ripext
         wget -q -O ripext/json.inc https://raw.githubusercontent.com/ErikMinekus/sm-ripext/master/pawn/scripting/include/ripext/json.inc
         wget -q -O ripext/http.inc https://raw.githubusercontent.com/ErikMinekus/sm-ripext/master/pawn/scripting/include/ripext/http.inc
-        
-        # install morecolors
-        wget -q https://raw.githubusercontent.com/DoctorMcKay/sourcemod-plugins/master/scripting/include/morecolors.inc
 
     - name: Compile plugin
       run: |
