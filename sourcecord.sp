@@ -5,7 +5,7 @@
 #include <sdktools>
 #include <ripext>
 
-#define PLUGIN_VERSION "0.1.3-alpha"
+#define PLUGIN_VERSION "0.1.4-alpha"
 
 public Plugin myinfo = {
     name = "SourceCord",
@@ -44,6 +44,13 @@ StringMap g_hUserNameCache;
 StringMap g_hChannelNameCache;
 StringMap g_hRoleNameCache;
 
+// message queue and error handling
+ArrayList g_hMessageQueue;
+StringMap g_hProcessedMessages;
+ArrayList g_hMessageIdOrder; // tracks insertion order for LRU cleanup
+int g_iFailedRequests;
+float g_fNextRetryTime;
+
 public void OnPluginStart() {
     g_cvConfigFile = CreateConVar("sc_config_file", "sourcecord", "Config filename (without .cfg)", FCVAR_NOTIFY | FCVAR_DONTRECORD);
     g_cvBotToken = CreateConVar("sc_bot_token", "", "Discord Bot token", FCVAR_PROTECTED);
@@ -61,6 +68,13 @@ public void OnPluginStart() {
     g_hUserNameCache = new StringMap();
     g_hChannelNameCache = new StringMap();
     g_hRoleNameCache = new StringMap();
+    
+    // init message queue and processing cache
+    g_hMessageQueue = new ArrayList(ByteCountToCells(512));
+    g_hProcessedMessages = new StringMap();
+    g_hMessageIdOrder = new ArrayList(ByteCountToCells(32)); // stores message IDs in order
+    g_iFailedRequests = 0;
+    g_fNextRetryTime = 0.0;
     
     // hook player events
     HookEvent("player_say", Event_PlayerSay);
@@ -139,8 +153,17 @@ public Action Timer_CheckDiscord(Handle timer) {
         return Plugin_Continue;
     }
     
+    // check if we're in retry backoff period
+    if (g_fNextRetryTime > 0.0 && GetGameTime() < g_fNextRetryTime) {
+        return Plugin_Continue;
+    }
+    
     char url[256];
-    Format(url, sizeof(url), "https://discord.com/api/v10/channels/%s/messages?limit=1", g_sChannelId);
+    if (strlen(g_sLastMessageId) > 0) {
+        Format(url, sizeof(url), "https://discord.com/api/v10/channels/%s/messages?limit=50&after=%s", g_sChannelId, g_sLastMessageId);
+    } else {
+        Format(url, sizeof(url), "https://discord.com/api/v10/channels/%s/messages?limit=50", g_sChannelId);
+    }
     
     HTTPRequest request = new HTTPRequest(url);
     
@@ -159,17 +182,13 @@ public Action Timer_CheckDiscord(Handle timer) {
 
 public void OnDiscordResponse(HTTPResponse response, any data) {
     if (response.Status != HTTPStatus_OK) {
-        if (response.Status == HTTPStatus_Unauthorized) {
-            LogError("Discord API: Unauthorized - check your bot token");
-        } else if (response.Status == HTTPStatus_Forbidden) {
-            LogError("Discord API: Forbidden - bot lacks permissions or channel access");
-        } else if (response.Status == HTTPStatus_NotFound) {
-            LogError("Discord API: Not Found - check your channel ID");
-        } else {
-            LogError("Discord API request failed with status: %d", view_as<int>(response.Status));
-        }
+        HandleDiscordError(response.Status);
         return;
     }
+    
+    // reset failed requests counter on success
+    g_iFailedRequests = 0;
+    g_fNextRetryTime = 0.0;
     
     if (response.Data == null) {
         return;
@@ -183,60 +202,163 @@ public void OnDiscordResponse(HTTPResponse response, any data) {
         return;
     }
     
-    JSONObject message = view_as<JSONObject>(messages.Get(0));
-    if (message == null) {
-        delete messages;
-        return;
-    }
+    // process messages in reverse order (oldest first) since Discord returns newest first
+    int messageCount = messages.Length;
+    char latestMessageId[32];
     
-    char messageId[32];
-    message.GetString("id", messageId, sizeof(messageId));
-    
-    if (strlen(g_sLastMessageId) == 0) {
-        strcopy(g_sLastMessageId, sizeof(g_sLastMessageId), messageId);
-        delete message;
-        delete messages;
-        return;
-    }
-    
-    if (StrEqual(messageId, g_sLastMessageId)) {
-        delete message;
-        delete messages;
-        return;
-    }
-    
-    strcopy(g_sLastMessageId, sizeof(g_sLastMessageId), messageId);
-    
-    JSONObject author = view_as<JSONObject>(message.Get("author"));
-    if (author == null) {
-        delete message;
-        delete messages;
-        return;
-    }
-    
-    bool isBot = false;
-    if (author.HasKey("bot")) {
-        isBot = author.GetBool("bot");
-    }
-    
-    if (isBot) {
+    for (int i = messageCount - 1; i >= 0; i--) {
+        JSONObject message = view_as<JSONObject>(messages.Get(i));
+        if (message == null) {
+            continue;
+        }
+        
+        char messageId[32];
+        message.GetString("id", messageId, sizeof(messageId));
+        
+        // skip if we've already processed this message
+        bool alreadyProcessed;
+        if (g_hProcessedMessages.GetValue(messageId, alreadyProcessed)) {
+            delete message;
+            continue;
+        }
+        
+        // mark as processed and track insertion order
+        g_hProcessedMessages.SetValue(messageId, true);
+        g_hMessageIdOrder.PushString(messageId);
+        strcopy(latestMessageId, sizeof(latestMessageId), messageId);
+        
+        // skip initial setup
+        if (strlen(g_sLastMessageId) == 0) {
+            delete message;
+            continue;
+        }
+        
+        JSONObject author = view_as<JSONObject>(message.Get("author"));
+        if (author == null) {
+            delete message;
+            continue;
+        }
+        
+        bool isBot = false;
+        if (author.HasKey("bot")) {
+            isBot = author.GetBool("bot");
+        }
+        
+        if (isBot) {
+            delete author;
+            delete message;
+            continue;
+        }
+        
+        char username[64], content[512], userId[32];
+        author.GetString("username", username, sizeof(username));
+        author.GetString("id", userId, sizeof(userId));
+        message.GetString("content", content, sizeof(content));
+        
         delete author;
         delete message;
-        delete messages;
+        
+        if (strlen(content) > 0) {
+            QueueMessageForProcessing(userId, username, content);
+        }
+    }
+    
+    // update last message ID to the newest message we received
+    if (strlen(latestMessageId) > 0) {
+        strcopy(g_sLastMessageId, sizeof(g_sLastMessageId), latestMessageId);
+    }
+    
+    delete messages;
+    ProcessMessageQueue();
+    
+    // periodically clean up old processed message IDs to prevent memory bloat
+    static int cleanupCounter = 0;
+    cleanupCounter++;
+    if (cleanupCounter >= 100) { // cleanup every 100 successful responses
+        CleanupProcessedMessages();
+        cleanupCounter = 0;
+    }
+}
+
+void CleanupProcessedMessages() {
+    // keep only the most recent 1000 processed message IDs using LRU eviction
+    int maxCacheSize = 1000;
+    if (g_hProcessedMessages.Size <= maxCacheSize) {
         return;
     }
     
-    char username[64], content[512], userId[32];
-    author.GetString("username", username, sizeof(username));
-    author.GetString("id", userId, sizeof(userId));
-    message.GetString("content", content, sizeof(content));
+    int currentSize = g_hProcessedMessages.Size;
+    int entriesToRemove = currentSize - maxCacheSize;
     
-    delete author;
-    delete message;
-    delete messages;
+    LogMessage("LRU cleanup: removing %d oldest entries (current size: %d -> target: %d)", 
+        entriesToRemove, currentSize, maxCacheSize);
     
-    if (strlen(content) > 0) {
-        ProcessDiscordMentions(userId, username, content);
+    // remove oldest entries first (FIFO from the order tracking array)
+    for (int i = 0; i < entriesToRemove && g_hMessageIdOrder.Length > 0; i++) {
+        char oldestId[32];
+        g_hMessageIdOrder.GetString(0, oldestId, sizeof(oldestId));
+        g_hMessageIdOrder.Erase(0);
+        g_hProcessedMessages.Remove(oldestId);
+    }
+    
+    LogMessage("LRU cleanup completed (final size: %d)", g_hProcessedMessages.Size);
+}
+
+void HandleDiscordError(HTTPStatus status) {
+    if (status == HTTPStatus_Unauthorized) {
+        LogError("Discord API: Unauthorized - check your bot token");
+    } else if (status == HTTPStatus_Forbidden) {
+        LogError("Discord API: Forbidden - bot lacks permissions or channel access");
+    } else if (status == HTTPStatus_NotFound) {
+        LogError("Discord API: Not Found - check your channel ID");
+    } else if (status == HTTPStatus_TooManyRequests) {
+        LogError("Discord API: Rate limited - increasing retry delay");
+    } else {
+        LogError("Discord API request failed with status: %d", view_as<int>(status));
+    }
+    
+    // implement exponential backoff
+    g_iFailedRequests++;
+    float backoffDelay = Pow(2.0, float(g_iFailedRequests - 1)) * g_fUpdateInterval;
+    if (backoffDelay > 60.0) { // max 60 second delay
+        backoffDelay = 60.0;
+    }
+    
+    g_fNextRetryTime = GetGameTime() + backoffDelay;
+    LogMessage("Discord retry scheduled in %.1f seconds (attempt %d)", backoffDelay, g_iFailedRequests);
+}
+
+void QueueMessageForProcessing(const char[] userId, const char[] username, const char[] content) {
+    char messageData[512];
+    Format(messageData, sizeof(messageData), "%s|%s|%s", userId, username, content);
+    g_hMessageQueue.PushString(messageData);
+}
+
+void ProcessMessageQueue() {
+    int queueSize = g_hMessageQueue.Length;
+    if (queueSize == 0) {
+        return;
+    }
+    
+    // process up to 10 messages per batch to avoid overwhelming the server
+    int processCount = (queueSize > 10) ? 10 : queueSize;
+    
+    for (int i = 0; i < processCount; i++) {
+        char messageData[512];
+        g_hMessageQueue.GetString(0, messageData, sizeof(messageData));
+        g_hMessageQueue.Erase(0);
+        
+        // parse the message data
+        char parts[3][256];
+        if (ExplodeString(messageData, "|", parts, sizeof(parts), sizeof(parts[])) == 3) {
+            ProcessDiscordMentions(parts[0], parts[1], parts[2]);
+        }
+    }
+    
+    // if there are still messages queued, process them in next timer cycle
+    if (g_hMessageQueue.Length > 0) {
+        LogMessage("Message queue has %d remaining messages, will process next batch in %.1f seconds", 
+            g_hMessageQueue.Length, g_fUpdateInterval);
     }
 }
 
@@ -1047,6 +1169,15 @@ public void OnPluginEnd() {
     }
     if (g_hRoleNameCache != null) {
         delete g_hRoleNameCache;
+    }
+    if (g_hMessageQueue != null) {
+        delete g_hMessageQueue;
+    }
+    if (g_hProcessedMessages != null) {
+        delete g_hProcessedMessages;
+    }
+    if (g_hMessageIdOrder != null) {
+        delete g_hMessageIdOrder;
     }
 }
 
