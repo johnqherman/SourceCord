@@ -10,6 +10,9 @@ on:
         required: true
         default: 'manual'
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -79,25 +82,10 @@ jobs:
 
     - name: Upload to release
       if: github.event_name == 'release'
-      uses: actions/upload-release-asset@v1
+      run: |
+        gh release upload ${{ github.event.release.tag_name }} ./release/sourcecord.smx ./release/README.txt
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ github.event.release.upload_url }}
-        asset_path: ./release/sourcecord.smx
-        asset_name: sourcecord.smx
-        asset_content_type: application/octet-stream
-
-    - name: Upload README to release
-      if: github.event_name == 'release'
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ github.event.release.upload_url }}
-        asset_path: ./release/README.txt
-        asset_name: README.txt
-        asset_content_type: text/plain
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
