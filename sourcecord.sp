@@ -26,6 +26,7 @@ ConVar g_cvUpdateInterval;
 ConVar g_cvLogConnections;
 ConVar g_cvGuildId;
 ConVar g_cvUseRoleColors;
+ConVar g_cvUseNicknames;
 
 // plugin variables
 char g_sBotToken[128];
@@ -38,21 +39,23 @@ char g_sLastMessageId[32];
 Handle g_hDiscordTimer;
 char g_sGuildId[32];
 bool g_bUseRoleColors;
+bool g_bUseNicknames;
 StringMap g_hUserColorCache;
 StringMap g_hUserNameCache;
 StringMap g_hChannelNameCache;
 StringMap g_hRoleNameCache;
 
 public void OnPluginStart() {
-    g_cvConfigFile = CreateConVar("dcb_config_file", "sourcecord", "config filename (without .cfg)", FCVAR_NOTIFY | FCVAR_DONTRECORD);
-    g_cvBotToken = CreateConVar("dcb_bot_token", "", "discord bot token", FCVAR_PROTECTED);
-    g_cvChannelId = CreateConVar("dcb_channel_id", "", "discord channel ID", FCVAR_NOTIFY);
-    g_cvWebhookUrl = CreateConVar("dcb_webhook_url", "", "discord webhook URL", FCVAR_PROTECTED);
-    g_cvSteamApiKey = CreateConVar("dcb_steam_key", "", "steam API key", FCVAR_PROTECTED);
-    g_cvUpdateInterval = CreateConVar("dcb_interval", "1.0", "discord check interval (sec)", FCVAR_NOTIFY, true, 0.1, true, 10.0);
-    g_cvLogConnections = CreateConVar("dcb_log_connections", "0", "log player connect/disconnects", FCVAR_NOTIFY, true, 0.0, true, 1.0);
-    g_cvGuildId = CreateConVar("dcb_guild_id", "", "discord guild/server ID", FCVAR_NOTIFY);
-    g_cvUseRoleColors = CreateConVar("dcb_use_role_colors", "0", "use discord role colors for usernames", FCVAR_NOTIFY, true, 0.0, true, 1.0);
+    g_cvConfigFile = CreateConVar("sc_config_file", "sourcecord", "config filename (without .cfg)", FCVAR_NOTIFY | FCVAR_DONTRECORD);
+    g_cvBotToken = CreateConVar("sc_bot_token", "", "discord bot token", FCVAR_PROTECTED);
+    g_cvChannelId = CreateConVar("sc_channel_id", "", "discord channel ID", FCVAR_NOTIFY);
+    g_cvWebhookUrl = CreateConVar("sc_webhook_url", "", "discord webhook URL", FCVAR_PROTECTED);
+    g_cvSteamApiKey = CreateConVar("sc_steam_key", "", "steam API key", FCVAR_PROTECTED);
+    g_cvUpdateInterval = CreateConVar("sc_interval", "1.0", "discord check interval (sec)", FCVAR_NOTIFY, true, 0.1, true, 10.0);
+    g_cvLogConnections = CreateConVar("sc_log_connections", "0", "log player connect/disconnects", FCVAR_NOTIFY, true, 0.0, true, 1.0);
+    g_cvGuildId = CreateConVar("sc_guild_id", "", "discord guild/server ID", FCVAR_NOTIFY);
+    g_cvUseRoleColors = CreateConVar("sc_use_role_colors", "0", "use discord role colors for usernames", FCVAR_NOTIFY, true, 0.0, true, 1.0);
+    g_cvUseNicknames = CreateConVar("sc_use_nicknames", "1", "use discord server nicknames instead of global usernames", FCVAR_NOTIFY, true, 0.0, true, 1.0);
     
     // init caches
     g_hUserColorCache = new StringMap();
@@ -75,6 +78,7 @@ public void OnPluginStart() {
     g_cvLogConnections.AddChangeHook(OnConVarChanged);
     g_cvGuildId.AddChangeHook(OnConVarChanged);
     g_cvUseRoleColors.AddChangeHook(OnConVarChanged);
+    g_cvUseNicknames.AddChangeHook(OnConVarChanged);
     
 }
 
@@ -115,6 +119,7 @@ void LoadConfig() {
     g_bLogConnections = g_cvLogConnections.BoolValue;
     g_cvGuildId.GetString(g_sGuildId, sizeof(g_sGuildId));
     g_bUseRoleColors = g_cvUseRoleColors.BoolValue;
+    g_bUseNicknames = g_cvUseNicknames.BoolValue;
 }
 
 void StartTimer() {
@@ -697,13 +702,36 @@ public void OnDiscordMemberResponse(HTTPResponse response, DataPack pack) {
     delete pack;
     
     char colorPrefix[8] = "";
+    char displayName[64];
+    strcopy(displayName, sizeof(displayName), username);
     
     if (response.Status == HTTPStatus_OK && response.Data != null) {
         JSONObject member = view_as<JSONObject>(response.Data);
+        
+        if (g_bUseNicknames) {
+            if (!member.GetString("nick", displayName, sizeof(displayName)) || strlen(displayName) == 0) {
+                JSONObject user = view_as<JSONObject>(member.Get("user"));
+                if (user != null) {
+                    if (!user.GetString("display_name", displayName, sizeof(displayName)) || strlen(displayName) == 0) {
+                        if (!user.GetString("global_name", displayName, sizeof(displayName)) || strlen(displayName) == 0) {
+                            user.GetString("username", displayName, sizeof(displayName));
+                        }
+                    }
+                    delete user;
+                }
+            }
+        } else {
+            JSONObject user = view_as<JSONObject>(member.Get("user"));
+            if (user != null) {
+                user.GetString("username", displayName, sizeof(displayName));
+                delete user;
+            }
+        }
+        
         JSONArray roles = view_as<JSONArray>(member.Get("roles"));
         
         if (roles != null && roles.Length > 0) {
-            GetTopRoleColor(roles, userId, username, content);
+            GetTopRoleColor(roles, userId, displayName, content);
             delete member;
             return;
         }
@@ -717,9 +745,9 @@ public void OnDiscordMemberResponse(HTTPResponse response, DataPack pack) {
     g_hUserColorCache.SetString(userId, colorPrefix);
     
     if (strlen(colorPrefix) > 0) {
-        MC_PrintToChatAll("\x075865F2[Discord] %s%s{default} :  %s", colorPrefix, username, content);
+        MC_PrintToChatAll("\x075865F2[Discord] %s%s{default} :  %s", colorPrefix, displayName, content);
     } else {
-        MC_PrintToChatAll("\x075865F2[Discord] %s{default} :  %s", username, content);
+        MC_PrintToChatAll("\x075865F2[Discord] %s{default} :  %s", displayName, content);
     }
 }
 
@@ -822,7 +850,6 @@ void SendToDiscord(int client, const char[] message, bool isTeamChat = false) {
     GetClientName(client, playerName, sizeof(playerName));
     GetClientAuthId(client, AuthId_Steam3, steamId, sizeof(steamId));
     
-    // Replace ugly Steam ID placeholder with nicer text when Steam is down
     if (StrEqual(steamId, "STEAM_ID_STOP_IGNORING_RETVALS")) {
         strcopy(steamId, sizeof(steamId), "[Steam Offline]");
     }
