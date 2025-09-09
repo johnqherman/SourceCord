@@ -158,9 +158,9 @@ public Action Timer_CheckDiscord(Handle timer) {
     
     char url[256];
     if (strlen(g_sLastMessageId) > 0) {
-        Format(url, sizeof(url), "https://discord.com/api/v10/channels/%s/messages?limit=50&after=%s", g_sChannelId, g_sLastMessageId);
+        Format(url, sizeof(url), "https://discord.com/api/v10/channels/%s/messages?limit=5&after=%s", g_sChannelId, g_sLastMessageId);
     } else {
-        Format(url, sizeof(url), "https://discord.com/api/v10/channels/%s/messages?limit=50", g_sChannelId);
+        Format(url, sizeof(url), "https://discord.com/api/v10/channels/%s/messages?limit=5", g_sChannelId);
     }
     
     HTTPRequest request = new HTTPRequest(url);
@@ -169,6 +169,8 @@ public Action Timer_CheckDiscord(Handle timer) {
     Format(authHeader, sizeof(authHeader), "Bot %s", g_sBotToken);
     
     request.SetHeader("Authorization", authHeader);
+    request.SetHeader("Accept", "application/json");
+    request.SetHeader("Connection", "close");
     char userAgent[64];
     Format(userAgent, sizeof(userAgent), "SourceCord/%s", PLUGIN_VERSION);
     request.SetHeader("User-Agent", userAgent);
