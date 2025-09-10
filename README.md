@@ -1,6 +1,8 @@
 # SourceCord
 
 ![Build Release](https://github.com/johnqherman/sourcecord/actions/workflows/build-release.yml/badge.svg)
+![License](https://img.shields.io/github/license/johnqherman/SourceCord)
+![Latest Release](https://img.shields.io/github/v/release/johnqherman/SourceCord)
 
 ## Overview
 
