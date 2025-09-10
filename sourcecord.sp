@@ -410,13 +410,7 @@ public Action Event_PlayerConnect(Event event, const char[] name, bool dontBroad
     
     int client = GetClientOfUserId(event.GetInt("userid"));
     
-    if (strlen(g_sSteamApiKey) > 0 && IsValidClient(client)) {
-        char steamId64[32];
-        GetClientAuthId(client, AuthId_SteamID64, steamId64, sizeof(steamId64));
-        GetSteamAvatarConnect(steamId64, msg);
-    } else {
-        SendWebhookWithEscaping("Server", msg, "", false);
-    }
+    SendWebhookWithEscaping("Server", msg, "", false);
     
     return Plugin_Continue;
 }
@@ -437,13 +431,7 @@ public Action Event_PlayerDisconnect(Event event, const char[] name, bool dontBr
     EscapeUserContent(reason, escapedReason, sizeof(escapedReason));
     Format(msg, sizeof(msg), "**%s** disconnected (%s)", escapedPlayerName, escapedReason);
     
-    if (strlen(g_sSteamApiKey) > 0 && IsValidClient(client)) {
-        char steamId64[32];
-        GetClientAuthId(client, AuthId_SteamID64, steamId64, sizeof(steamId64));
-        GetSteamAvatarDisconnect(steamId64, msg);
-    } else {
-        SendWebhookWithEscaping("Server", msg, "", false);
-    }
+    SendWebhookWithEscaping("Server", msg, "", false);
     
     return Plugin_Continue;
 }
@@ -1144,43 +1132,7 @@ void GetSteamAvatar(const char[] steamId64, const char[] webhookUsername, const 
     request.Get(OnSteamResponse, pack);
 }
 
-void GetSteamAvatarConnect(const char[] steamId64, const char[] message) {
-    // check avatar cache first
-    char cachedAvatar[256];
-    if (GetCachedAvatar(steamId64, cachedAvatar, sizeof(cachedAvatar))) {
-        SendWebhookWithEscaping("Server", message, cachedAvatar, false);
-        return;
-    }
-    
-    char url[256];
-    Format(url, sizeof(url), "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=%s&steamids=%s", g_sSteamApiKey, steamId64);
-    
-    DataPack pack = new DataPack();
-    pack.WriteString(steamId64);
-    pack.WriteString(message);
-    
-    HTTPRequest request = new HTTPRequest(url);
-    request.Get(OnSteamAvatarConnect, pack);
-}
 
-void GetSteamAvatarDisconnect(const char[] steamId64, const char[] message) {
-    // check avatar cache first
-    char cachedAvatar[256];
-    if (GetCachedAvatar(steamId64, cachedAvatar, sizeof(cachedAvatar))) {
-        SendWebhookWithEscaping("Server", message, cachedAvatar, false);
-        return;
-    }
-    
-    char url[256];
-    Format(url, sizeof(url), "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=%s&steamids=%s", g_sSteamApiKey, steamId64);
-    
-    DataPack pack = new DataPack();
-    pack.WriteString(steamId64);
-    pack.WriteString(message);
-    
-    HTTPRequest request = new HTTPRequest(url);
-    request.Get(OnSteamAvatarDisconnect, pack);
-}
 
 public void OnSteamResponse(HTTPResponse response, DataPack pack) {
     pack.Reset();
@@ -1218,77 +1170,7 @@ public void OnSteamResponse(HTTPResponse response, DataPack pack) {
     SendWebhook(webhookUsername, message, avatarUrl);
 }
 
-public void OnSteamAvatarConnect(HTTPResponse response, DataPack pack) {
-    pack.Reset();
-    
-    char steamId64[32], message[512], avatarUrl[256] = "";
-    pack.ReadString(steamId64, sizeof(steamId64));
-    pack.ReadString(message, sizeof(message));
-    delete pack;
-    
-    if (response.Status == HTTPStatus_OK && response.Data != null) {
-        JSONObject data = view_as<JSONObject>(response.Data);
-        JSONObject responseObj = view_as<JSONObject>(data.Get("response"));
-        JSONArray players = view_as<JSONArray>(responseObj.Get("players"));
-        
-        if (players != null && players.Length > 0) {
-            JSONObject player = view_as<JSONObject>(players.Get(0));
-            if (player != null) {
-                player.GetString("avatarfull", avatarUrl, sizeof(avatarUrl));
-                delete player;
-            }
-        }
-        
-        if (players != null) {
-            delete players;
-        }
-        if (responseObj != null) {
-            delete responseObj;
-        }
-        delete data;
-    }
-    
-    SetCachedAvatar(steamId64, avatarUrl);
-    
-    SendWebhookWithEscaping("Server", message, avatarUrl, false);
-}
 
-public void OnSteamAvatarDisconnect(HTTPResponse response, DataPack pack) {
-    pack.Reset();
-    
-    char steamId64[32], message[512], avatarUrl[256] = "";
-    pack.ReadString(steamId64, sizeof(steamId64));
-    pack.ReadString(message, sizeof(message));
-    delete pack;
-    
-    if (response.Status == HTTPStatus_OK && response.Data != null) {
-        JSONObject data = view_as<JSONObject>(response.Data);
-        JSONObject responseObj = view_as<JSONObject>(data.Get("response"));
-        JSONArray players = view_as<JSONArray>(responseObj.Get("players"));
-        
-        if (players != null && players.Length > 0) {
-            JSONObject player = view_as<JSONObject>(players.Get(0));
-            if (player != null) {
-                player.GetString("avatarfull", avatarUrl, sizeof(avatarUrl));
-                delete player;
-            }
-        }
-        
-        if (players != null) {
-            delete players;
-        }
-
-        if (responseObj != null) {
-            delete responseObj;
-        }
-
-        delete data;
-    }
-    
-    SetCachedAvatar(steamId64, avatarUrl);
-    
-    SendWebhookWithEscaping("Server", message, avatarUrl, false);
-}
 
 void SendWebhook(const char[] username, const char[] content, const char[] avatarUrl) {
     SendWebhookWithEscaping(username, content, avatarUrl, true);
