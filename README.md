@@ -14,7 +14,7 @@ Enables real-time, two-way chat between your Source Engine game and a Discord se
 
 - **Two-way chat sync**: Relays messages both Game → Discord and Discord → Game
 - **Discord role colors**: Shows usernames in-game with their highest role color
-- **Steam profile integration**: Fetches player avatars and profile info for moderation
+- **Steam profile integration**: Fetches players’ avatars and SteamID3s for moderation
 - **Configurable logging**: Optional join/leave notifications for players
 - **Automatic recovery**: Handles network issues and Discord outages smoothly
 
@@ -101,16 +101,10 @@ You'll set up both in the steps below.
 
 #### Step 3: Invite Bot to Your Server
 
-**Required Permissions** (without these, SourceCord won’t work):
+**Required Permissions**:
 
 - **View Channels**: Needed to see the configured channel and resolve mentions
 - **Read Message History**: Needed to fetch/catch up on messages
-
-**Optional / Feature-Specific Permissions**:
-
-- **View Server**: Needed to fetch role colors and nicknames
-- Access to roles if `sc_use_role_colors` is enabled
-- Access to member info if `sc_use_nicknames` is enabled
 
 **Bot Invitation URL**:
 
