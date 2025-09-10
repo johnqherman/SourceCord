@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://github.com/johnqherman/SourceCord#readme
+    about: Check the README for setup instructions and configuration help
+  - name: Search Existing Issues
+    url: https://github.com/johnqherman/SourceCord/issues
+    about: Search existing issues before creating a new one
