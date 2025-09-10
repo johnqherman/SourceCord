@@ -68,8 +68,6 @@ public void OnPluginStart() {
     g_cvUseRoleColors = CreateConVar("sc_use_role_colors", "0", "Use Discord role colors for usernames", FCVAR_NOTIFY, true, 0.0, true, 1.0);
     g_cvUseNicknames = CreateConVar("sc_use_nicknames", "1", "Use Discord server nicknames instead of global usernames", FCVAR_NOTIFY, true, 0.0, true, 1.0);
 
-    LoadSensitiveCredentials();
-    
     // init caches
     g_hUserColorCache = new StringMap();
     g_hUserNameCache = new StringMap();
@@ -111,6 +109,7 @@ public void OnConfigsExecuted() {
         ServerCommand("exec sourcemod/%s.cfg", configFile);
     }
     
+    LoadSensitiveCredentials();
     LoadOperationalSettings();
 }
 
