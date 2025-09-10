@@ -7,7 +7,7 @@
 SourceCord enables real-time, two-way chat between your Source Engine game and a Discord server. Players can chat with Discord users directly from in-game, while Discord messages appear in the game chat with proper formatting and role colors.
 
 <p align="center">
-  <img src="https://via.assets.so/img.jpg?w=900&h=350&bg=1f2937&text=IN-GAME+%7C+DISCORD&fontColor=6b7280&f=png" alt="Placeholder"/>
+  <img src="https://github.com/user-attachments/assets/8c51d4c9-c2d6-4850-bf2e-b719c2064647" alt="Side by Side"/>
 </p>
 
 ## Features
