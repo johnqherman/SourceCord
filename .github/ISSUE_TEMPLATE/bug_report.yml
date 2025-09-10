@@ -58,8 +58,8 @@ body:
         - Team Fortress 2
         - Left 4 Dead 2
         - Garry's Mod
-        - Day of Defeat: Source
-        - Half-Life 2: Deathmatch
+        - "Day of Defeat: Source"
+        - "Half-Life 2: Deathmatch"
         - Other Source Game/Mod
     validations:
       required: true
