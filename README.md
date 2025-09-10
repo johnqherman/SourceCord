@@ -9,7 +9,7 @@
 Enables real-time, two-way chat between your Source Engine game and a Discord server. Players can chat with Discord users directly from in-game, while Discord messages appear in the game chat with proper formatting and role colors.
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/b53e7efe-bf00-45da-9de2-3798fc393c19" alt="Side by Side"/>
+  <img src="https://github.com/user-attachments/assets/7aa1282d-81d4-4bdd-824c-c934d4dd817d" alt="Side by Side"/>
 </p>
 
 ## Features
