@@ -5,7 +5,7 @@
 #include <sdktools>
 #include <ripext>
 
-#define PLUGIN_VERSION "1.0.0"
+#define PLUGIN_VERSION "1.0.1"
 
 #define AVATAR_CACHE_TTL 1800.0  // 30 minutes
 #define DISCORD_NICK_TTL 1800.0  // 30 minutes
@@ -20,55 +20,55 @@ public Plugin myinfo = {
     url = "https://github.com/johnqherman/SourceCord/"
 };
 
-// convars
-ConVar g_cvConfigFile;
-ConVar g_cvBotToken;
-ConVar g_cvChannelId;
-ConVar g_cvWebhookUrl;
-ConVar g_cvSteamApiKey;
-ConVar g_cvUpdateInterval;
-ConVar g_cvLogConnections;
-ConVar g_cvGuildId;
-ConVar g_cvUseRoleColors;
-ConVar g_cvUseNicknames;
-
-// plugin variables
-char g_sBotToken[128];
-char g_sChannelId[32];
-char g_sWebhookUrl[256];
-char g_sSteamApiKey[64];
-float g_fUpdateInterval;
-bool g_bLogConnections;
-char g_sLastMessageId[32];
-Handle g_hDiscordTimer;
-char g_sGuildId[32];
-bool g_bUseRoleColors;
-bool g_bUseNicknames;
-StringMap g_hUserColorCache;
-StringMap g_hUserNameCache;
-StringMap g_hUserNickCache;
-StringMap g_hUserAvatarCache;
-StringMap g_hChannelNameCache;
-StringMap g_hRoleNameCache;
-
-// message queue and error handling
-ArrayList g_hMessageQueue;
-StringMap g_hProcessedMessages;
-ArrayList g_hMessageIdOrder; // tracks insertion order for LRU cleanup
-int g_iFailedRequests;
-float g_fNextRetryTime;
+// convars                
+ConVar g_cvConfigFile;                            
+ConVar g_cvUpdateInterval;                        
+ConVar g_cvLogConnections;                        
+ConVar g_cvUseRoleColors;                         
+ConVar g_cvUseNicknames;                          
+                                                  
+// settings           
+float g_fUpdateInterval;                          
+bool g_bLogConnections;                           
+bool g_bUseRoleColors;                            
+bool g_bUseNicknames;                             
+                                                  
+// credentials        
+char g_sBotToken[128];                            
+char g_sChannelId[32];                            
+char g_sGuildId[32];                              
+char g_sWebhookUrl[256];                          
+char g_sSteamApiKey[64];                          
+                                                  
+// discord state                               
+char g_sLastMessageId[32];                        
+Handle g_hDiscordTimer;                           
+                                                  
+// error handling
+int g_iFailedRequests;                            
+float g_fNextRetryTime;                           
+                                                  
+// cache
+StringMap g_hUserColorCache;                      
+StringMap g_hUserNameCache;                       
+StringMap g_hUserNickCache;                       
+StringMap g_hUserAvatarCache;                     
+StringMap g_hChannelNameCache;                    
+StringMap g_hRoleNameCache;                       
+                                                  
+// message queuing                             
+ArrayList g_hMessageQueue;                        
+StringMap g_hProcessedMessages;                   
+ArrayList g_hMessageIdOrder;                      
 
 public void OnPluginStart() {
     g_cvConfigFile = CreateConVar("sc_config_file", "sourcecord", "Config filename (without .cfg)", FCVAR_NOTIFY | FCVAR_DONTRECORD);
-    g_cvBotToken = CreateConVar("sc_bot_token", "", "Discord Bot token", FCVAR_PROTECTED);
-    g_cvChannelId = CreateConVar("sc_channel_id", "", "Discord channel ID", FCVAR_NOTIFY);
-    g_cvWebhookUrl = CreateConVar("sc_webhook_url", "", "Discord Webhook URL", FCVAR_PROTECTED);
-    g_cvSteamApiKey = CreateConVar("sc_steam_key", "", "Steam API key", FCVAR_PROTECTED);
     g_cvUpdateInterval = CreateConVar("sc_interval", "1.0", "Discord check interval (seconds)", FCVAR_NOTIFY, true, 0.1, true, 10.0);
     g_cvLogConnections = CreateConVar("sc_log_connections", "0", "Log player connect/disconnects", FCVAR_NOTIFY, true, 0.0, true, 1.0);
-    g_cvGuildId = CreateConVar("sc_guild_id", "", "Discord guild/server ID", FCVAR_NOTIFY);
     g_cvUseRoleColors = CreateConVar("sc_use_role_colors", "0", "Use Discord role colors for usernames", FCVAR_NOTIFY, true, 0.0, true, 1.0);
     g_cvUseNicknames = CreateConVar("sc_use_nicknames", "1", "Use Discord server nicknames instead of global usernames", FCVAR_NOTIFY, true, 0.0, true, 1.0);
+
+    LoadSensitiveCredentials();
     
     // init caches
     g_hUserColorCache = new StringMap();
@@ -81,7 +81,7 @@ public void OnPluginStart() {
     // init message queue and processing cache
     g_hMessageQueue = new ArrayList(ByteCountToCells(512));
     g_hProcessedMessages = new StringMap();
-    g_hMessageIdOrder = new ArrayList(ByteCountToCells(32)); // stores message IDs in order
+    g_hMessageIdOrder = new ArrayList(ByteCountToCells(32));
     g_iFailedRequests = 0;
     g_fNextRetryTime = 0.0;
     
@@ -92,17 +92,12 @@ public void OnPluginStart() {
     
     // hook convar changes
     g_cvConfigFile.AddChangeHook(OnConVarChanged);
-    g_cvBotToken.AddChangeHook(OnConVarChanged);
-    g_cvChannelId.AddChangeHook(OnConVarChanged);
-    g_cvWebhookUrl.AddChangeHook(OnConVarChanged);
-    g_cvSteamApiKey.AddChangeHook(OnConVarChanged);
     g_cvUpdateInterval.AddChangeHook(OnConVarChanged);
     g_cvLogConnections.AddChangeHook(OnConVarChanged);
-    g_cvGuildId.AddChangeHook(OnConVarChanged);
     g_cvUseRoleColors.AddChangeHook(OnConVarChanged);
     g_cvUseNicknames.AddChangeHook(OnConVarChanged);
     
-    // create config file if it doesn't exist
+    // create operational config file if it doesn't exist
     char configFile[64];
     g_cvConfigFile.GetString(configFile, sizeof(configFile));
     AutoExecConfig(true, configFile);
@@ -110,14 +105,13 @@ public void OnPluginStart() {
 }
 
 public void OnConfigsExecuted() {
-    // execute custom config file if specified
     char configFile[64];
     g_cvConfigFile.GetString(configFile, sizeof(configFile));
     if (strlen(configFile) > 0 && !StrEqual(configFile, "sourcecord")) {
         ServerCommand("exec sourcemod/%s.cfg", configFile);
     }
     
-    LoadConfig();
+    LoadOperationalSettings();
 }
 
 public void OnMapStart() {
@@ -130,27 +124,96 @@ public void OnConVarChanged(ConVar convar, const char[] oldValue, const char[] n
         return;
     }
     
-    LoadConfig();
+    LoadOperationalSettings();
 
-    if (convar == g_cvBotToken || convar == g_cvChannelId || convar == g_cvUpdateInterval) {
+    if (convar == g_cvUpdateInterval) {
         StartTimer();
     }
 }
 
-void LoadConfig() {
-    g_cvBotToken.GetString(g_sBotToken, sizeof(g_sBotToken));
-    g_cvChannelId.GetString(g_sChannelId, sizeof(g_sChannelId));
-    g_cvWebhookUrl.GetString(g_sWebhookUrl, sizeof(g_sWebhookUrl));
-    g_cvSteamApiKey.GetString(g_sSteamApiKey, sizeof(g_sSteamApiKey));
+void LoadOperationalSettings() {
     g_fUpdateInterval = g_cvUpdateInterval.FloatValue;
     g_bLogConnections = g_cvLogConnections.BoolValue;
-    g_cvGuildId.GetString(g_sGuildId, sizeof(g_sGuildId));
     g_bUseRoleColors = g_cvUseRoleColors.BoolValue;
     g_bUseNicknames = g_cvUseNicknames.BoolValue;
 }
 
+void LoadSensitiveCredentials() {
+    char configFile[64];
+    g_cvConfigFile.GetString(configFile, sizeof(configFile));
+    
+    char configPath[PLATFORM_MAX_PATH];
+    BuildPath(Path_SM, configPath, sizeof(configPath), "configs/%s.cfg", configFile);
+    
+    KeyValues kv = new KeyValues("SourceCord");
+    if (!kv.ImportFromFile(configPath)) {
+        LogError("Failed to load configuration file: %s", configPath);
+        
+        CreateExampleConfig(configPath);
+        
+        LogError("Please edit the config file with your Discord credentials and restart the plugin.");
+        delete kv;
+        return;
+    }
+    
+    // load discord settings
+    if (kv.JumpToKey("Discord", false)) {
+        kv.GetString("bot_token", g_sBotToken, sizeof(g_sBotToken), "");
+        kv.GetString("channel_id", g_sChannelId, sizeof(g_sChannelId), "");
+        kv.GetString("guild_id", g_sGuildId, sizeof(g_sGuildId), "");
+        kv.GetString("webhook_url", g_sWebhookUrl, sizeof(g_sWebhookUrl), "");
+        kv.GoBack();
+    }
+    
+    // load steam api key
+    if (kv.JumpToKey("Steam", false)) {
+        kv.GetString("api_key", g_sSteamApiKey, sizeof(g_sSteamApiKey), "");
+        kv.GoBack();
+    }
+    
+    delete kv;
+    
+    // validate required settings
+    if (strlen(g_sBotToken) == 0) {
+        LogError("Bot token not configured! Please set 'bot_token' in %s", configPath);
+    }
+    if (strlen(g_sChannelId) == 0) {
+        LogError("Channel ID not configured! Please set 'channel_id' in %s", configPath);
+    }
+    
+    LogMessage("Configuration loaded successfully from %s", configPath);
+}
+
+void CreateExampleConfig(const char[] configPath) {
+    File file = OpenFile(configPath, "w");
+    if (file == null) {
+        LogError("Failed to create example config file at %s", configPath);
+        return;
+    }
+    
+    file.WriteLine("\"SourceCord\"");
+    file.WriteLine("{");
+    file.WriteLine("    \"Discord\"");
+    file.WriteLine("    {");
+    file.WriteLine("        \"bot_token\"     \"\"  // Discord Bot token");
+    file.WriteLine("        \"channel_id\"    \"\"  // Discord channel ID");
+    file.WriteLine("        \"guild_id\"      \"\"  // Discord guild/server ID");
+    file.WriteLine("        \"webhook_url\"   \"\"  // Discord Webhook URL");
+    file.WriteLine("    }");
+    file.WriteLine("    ");
+    file.WriteLine("    \"Steam\"");
+    file.WriteLine("    {");
+    file.WriteLine("        \"api_key\"       \"\"  // Steam API key");
+    file.WriteLine("    }");
+    file.WriteLine("}");
+    
+    file.Close();
+    LogMessage("Created example configuration file at %s", configPath);
+    LogMessage("Please edit this file with your credentials and restart the plugin.");
+}
+
 void StartTimer() {
-    LoadConfig();
+    LoadOperationalSettings();
     
     if (g_hDiscordTimer != null) {
         KillTimer(g_hDiscordTimer);
@@ -297,8 +360,8 @@ public void OnDiscordResponse(HTTPResponse response, any data) {
 }
 
 void CleanupProcessedMessages() {
-    // keep only the most recent 1000 processed IDs
-    int maxCacheSize = 1000;
+    // keep only 100 most recent processed IDs
+    int maxCacheSize = 100;
     if (g_hProcessedMessages.Size <= maxCacheSize) {
         return;
     }
@@ -364,7 +427,7 @@ void ProcessMessageQueue() {
         g_hMessageQueue.GetString(0, messageData, sizeof(messageData));
         g_hMessageQueue.Erase(0);
         
-        // parse the message data
+        // parse message data
         char parts[3][256];
         if (ExplodeString(messageData, "|", parts, sizeof(parts), sizeof(parts[])) == 3) {
             ProcessDiscordMentions(parts[0], parts[1], parts[2]);
@@ -457,6 +520,7 @@ void ProcessDiscordMentions(const char[] userId, const char[] username, const ch
     char mentionPattern[32], mentionId[32];
     int searchStart = 0;
     int pos;
+
     while ((pos = StrContains(processedContent[searchStart], "<@", false)) != -1) {
         int actualPos = searchStart + pos;
         
@@ -467,11 +531,16 @@ void ProcessDiscordMentions(const char[] userId, const char[] username, const ch
         }
         
         int endPos = StrContains(processedContent[actualPos], ">", false);
-        if (endPos == -1) break;
+        
+        if (endPos == -1) {
+            break;
+        }
+
         endPos += actualPos;
         
         int idStart = actualPos + 2;
         int idLen = endPos - idStart;
+
         if (idLen > 0 && idLen < sizeof(mentionId)) {
             CopySubstring(processedContent, idStart, idLen, mentionId, sizeof(mentionId));
             
@@ -1178,10 +1247,7 @@ void SendWebhook(const char[] username, const char[] content, const char[] avata
 }
 
 void SendWebhookWithEscaping(const char[] username, const char[] content, const char[] avatarUrl, bool escapeContent) {
-    char webhookUrl[256];
-    g_cvWebhookUrl.GetString(webhookUrl, sizeof(webhookUrl));
-    
-    if (strlen(webhookUrl) == 0) {
+    if (strlen(g_sWebhookUrl) == 0) {
         LogError("Webhook URL is empty!");
         return;
     }
@@ -1201,7 +1267,7 @@ void SendWebhookWithEscaping(const char[] username, const char[] content, const 
         payload.SetString("avatar_url", avatarUrl);
     }
     
-    HTTPRequest request = new HTTPRequest(webhookUrl);
+    HTTPRequest request = new HTTPRequest(g_sWebhookUrl);
     request.SetHeader("Content-Type", "application/json");
     char userAgent[64];
     Format(userAgent, sizeof(userAgent), "SourceCord/%s", PLUGIN_VERSION);

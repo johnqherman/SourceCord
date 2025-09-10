@@ -32,48 +32,68 @@ Enables real-time, two-way chat between your Source Engine game and a Discord se
 1. Install the [RipExt](https://forums.alliedmods.net/showthread.php?t=298024) extension on your server
 2. Download the latest `sourcecord.smx` from releases
 3. Place `sourcecord.smx` in `addons/sourcemod/plugins/`
-4. Configure the plugin (see configuration section)
-5. Restart your server or use `sm plugins load sourcecord`
+4. Load the plugin with `sm plugins load sourcecord` (it will auto-create both config files)
+5. Edit `addons/sourcemod/configs/sourcecord.cfg` with your credentials (see configuration section)
+6. Restart the plugin with `sm plugins reload sourcecord`
 
 ## Configuration
 
-On first load, the plugin automatically creates a configuration file at `cfg/sourcemod/sourcecord.cfg` with default settings.
+SourceCord uses a secure two-part configuration system:
 
-Edit this file and add your Discord and Steam API credentials:
+### 1. Operational Settings
+
+On first load, the plugin creates `cfg/sourcemod/sourcecord.cfg` with operational settings:
 
 ```cfg
-// Discord
-sc_bot_token ""          // Your Discord Bot token
-sc_channel_id ""         // Your Discord channel ID  
-sc_guild_id ""           // Your Discord guild/server ID
-sc_webhook_url ""        // Your Discord Webhook URL
-
-// Steam
-sc_steam_key ""          // Your Steam API key
-
-// Plugin Behavior
 sc_interval "1.0"        // Check Discord messages every 1 second
 sc_log_connections "0"   // Log player connections to Discord (disabled by default)
 sc_use_role_colors "0"   // Show Discord role colors in-game (disabled by default)  
 sc_use_nicknames "1"     // Use Discord server nicknames (enabled by default)
 ```
 
-**Note**: The `sc_config_file` ConVar is console-only and won’t appear in the generated config file.
+### 2. Credentials Setup
 
-### Configuration Variables
+The plugin will also automatically create `addons/sourcemod/configs/sourcecord.cfg` if it doesn't exist.
+
+**Edit the config file** with your sensitive credentials:
+
+```cfg
+"SourceCord"
+{
+    "Discord"
+    {
+        "bot_token"     ""  // Discord Bot token
+        "channel_id"    ""  // Discord channel ID  
+        "guild_id"      ""  // Discord guild/server ID
+        "webhook_url"   ""  // Discord Webhook URL
+    }
+    
+    "Steam"
+    {
+        "api_key"       ""  // Steam API key
+    }
+}
+```
+
+### Configuration Variables (Console/CVars)
 
 | ConVar | Description | Default | Range |
 |--------|-------------|---------|-------|
-| `sc_bot_token` | Discord Bot token | "" | - |
-| `sc_channel_id` | Discord channel ID | "" | - |
-| `sc_guild_id` | Discord guild/server ID | "" | - |
-| `sc_webhook_url` | Discord Webhook URL | "" | - |
-| `sc_steam_key` | Steam API key | "" | - |
 | `sc_interval` | Discord check interval (seconds) | 1.0 | 0.1 - 10.0 |
 | `sc_log_connections` | Log player connect/disconnects | 0 | 0 - 1 |
 | `sc_use_role_colors` | Use Discord role colors for usernames | 0 | 0 - 1 |
 | `sc_use_nicknames` | Use Discord server nicknames instead of global usernames | 1 | 0 - 1 |
 | `sc_config_file` | Config filename (without .cfg) - console only | "sourcecord" | - |
+
+### Credentials Configuration (KeyValues Config File)
+
+| Setting | Description | Location |
+|---------|-------------|----------|
+| `Discord.bot_token` | Discord Bot token | `configs/sourcecord.cfg` |
+| `Discord.channel_id` | Discord channel ID | `configs/sourcecord.cfg` |
+| `Discord.guild_id` | Discord guild/server ID | `configs/sourcecord.cfg` |
+| `Discord.webhook_url` | Discord Webhook URL | `configs/sourcecord.cfg` |
+| `Steam.api_key` | Steam API key | `configs/sourcecord.cfg` |
 
 ## Discord Integration Setup
 
@@ -90,7 +110,7 @@ You'll set up both in the steps below.
 
 1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
 2. Create a new application and bot
-3. Copy the bot token and set it as `sc_bot_token`
+3. Copy the bot token and add it to your `configs/sourcecord.cfg` file as `bot_token`
 
 #### Step 2: Enable Required Bot Intents
 
@@ -122,17 +142,18 @@ https://discord.com/api/oauth2/authorize?client_id=<YOUR_BOT_CLIENT_ID>&permissi
 
 1. In your Discord channel, go to Settings → Integrations → Webhooks
 2. Create a new webhook
-3. Copy the webhook URL and set it as `sc_webhook_url`
+3. Copy the webhook URL and add it to your `configs/sourcecord.cfg` file as `webhook_url`
 
 ## Getting Discord IDs
 
-- **Channel ID**: Right-click the channel → **Copy ID**
-- **Guild ID**: Right-click the server name → **Copy ID**
+- **Channel ID**: Right-click the channel → **Copy ID** (add as `channel_id` in config)
+- **Guild ID**: Right-click the server name → **Copy ID** (add as `guild_id` in config)
 - Enable **Developer Mode** in Discord settings to access these options
 
 ## Steam API Key
 
-Generate a Steam API key from the [Steam Web API](https://steamcommunity.com/dev/apikey) and set it in `sc_steam_key`.
+1. Generate a Steam API key from the [Steam Web API](https://steamcommunity.com/dev/apikey)
+2. Add it to `configs/sourcecord.cfg` file as `api_key`
 
 ## Usage
 
