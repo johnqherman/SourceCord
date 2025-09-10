@@ -68,6 +68,15 @@ body:
       required: true
 
   - type: input
+    id: other-game
+    attributes:
+      label: Other Game/Mod Name
+      description: Specify game or mod name if 'Other' was selected
+      placeholder: "e.g., TF2Classic, Open Fortress, Sven Co-op, etc."
+    validations:
+      required: false
+
+  - type: input
     id: sourcemod-version
     attributes:
       label: SourceMod Version
