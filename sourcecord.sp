@@ -91,7 +91,6 @@ public void OnPluginStart() {
     
     // hook player events
     HookEvent("player_say", Event_PlayerSay);
-    HookEvent("say_team", Event_PlayerSayTeam);
     HookEvent("player_connect", Event_PlayerConnect);
     HookEvent("player_disconnect", Event_PlayerDisconnect);
     
@@ -464,25 +463,9 @@ public Action Event_PlayerSay(Event event, const char[] name, bool dontBroadcast
         return Plugin_Continue;
     }
     
-    SendToDiscord(client, message, false);
-    return Plugin_Continue;
-}
-
-public Action Event_PlayerSayTeam(Event event, const char[] name, bool dontBroadcast) {
-    int client = GetClientOfUserId(event.GetInt("userid"));
+    bool isTeamChat = event.GetBool("teamonly");
     
-    if (!IsValidClient(client) || IsChatTrigger()) {
-        return Plugin_Continue;
-    }
-    
-    char message[256];
-    event.GetString("text", message, sizeof(message));
-    
-    if (strlen(message) == 0) {
-        return Plugin_Continue;
-    }
-    
-    SendToDiscord(client, message, true);
+    SendToDiscord(client, message, isTeamChat);
     return Plugin_Continue;
 }
 
