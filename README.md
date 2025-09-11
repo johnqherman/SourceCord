@@ -6,12 +6,14 @@
 
 ## Overview
 
-A SourceMod plugin that syncs chat between your Source Engine server and Discord. Players can talk with Discord users directly from in-game, while Discord messages appear in chat with nicknames and role colors.
+A SourceMod plugin that syncs chat between your Source Engine server and Discord.
+
+Players can talk with Discord users directly from in-game, while Discord messages appear in chat with nicknames and role colors.
 
 <p align="center">
   <img src="https://github.com/user-attachments/assets/7aa1282d-81d4-4bdd-824c-c934d4dd817d" alt="Side by Side"/>
   <br>
-  <em>Image courtesy of boba (matchaland.net)</em>
+  <em>Image courtesy of <a href="https://github.com/bobatealee">boba</a></em>
 </p>
 
 ## Features
