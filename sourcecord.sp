@@ -5,7 +5,7 @@
 #include <sdktools>
 #include <ripext>
 
-#define PLUGIN_VERSION "1.0.1"
+#define PLUGIN_VERSION "1.0.2"
 
 #define AVATAR_CACHE_TTL 1800.0  // 30 minutes
 #define DISCORD_NICK_TTL 1800.0  // 30 minutes
@@ -25,13 +25,17 @@ ConVar g_cvConfigFile;
 ConVar g_cvUpdateInterval;                        
 ConVar g_cvLogConnections;                        
 ConVar g_cvUseRoleColors;                         
-ConVar g_cvUseNicknames;                          
+ConVar g_cvUseNicknames;
+ConVar g_cvShowSteamId;
+ConVar g_cvShowDiscordPrefix;                          
                                                   
 // settings           
 float g_fUpdateInterval;                          
 bool g_bLogConnections;                           
 bool g_bUseRoleColors;                            
-bool g_bUseNicknames;                             
+bool g_bUseNicknames;
+bool g_bShowSteamId;
+bool g_bShowDiscordPrefix;                             
                                                   
 // credentials        
 char g_sBotToken[128];                            
@@ -63,10 +67,12 @@ ArrayList g_hMessageIdOrder;
 
 public void OnPluginStart() {
     g_cvConfigFile = CreateConVar("sc_config_file", "sourcecord", "Config filename (without .cfg)", FCVAR_NOTIFY | FCVAR_DONTRECORD);
-    g_cvUpdateInterval = CreateConVar("sc_interval", "1.0", "Discord check interval (seconds)", FCVAR_NOTIFY, true, 0.1, true, 10.0);
-    g_cvLogConnections = CreateConVar("sc_log_connections", "0", "Log player connect/disconnects", FCVAR_NOTIFY, true, 0.0, true, 1.0);
-    g_cvUseRoleColors = CreateConVar("sc_use_role_colors", "0", "Use Discord role colors for usernames", FCVAR_NOTIFY, true, 0.0, true, 1.0);
+    g_cvUpdateInterval = CreateConVar("sc_interval", "1.0", "Discord check interval (seconds)", FCVAR_NOTIFY, true, 1.0, true, 10.0);
+    g_cvLogConnections = CreateConVar("sc_log_connections", "1", "Log player connect/disconnects", FCVAR_NOTIFY, true, 0.0, true, 1.0);
+    g_cvUseRoleColors = CreateConVar("sc_use_role_colors", "1", "Use Discord role colors for usernames", FCVAR_NOTIFY, true, 0.0, true, 1.0);
     g_cvUseNicknames = CreateConVar("sc_use_nicknames", "1", "Use Discord server nicknames instead of global usernames", FCVAR_NOTIFY, true, 0.0, true, 1.0);
+    g_cvShowSteamId = CreateConVar("sc_show_steam_id", "1", "Show Steam ID in Discord messages", FCVAR_NOTIFY, true, 0.0, true, 1.0);
+    g_cvShowDiscordPrefix = CreateConVar("sc_show_discord_prefix", "1", "Show [Discord] prefix in chat messages", FCVAR_NOTIFY, true, 0.0, true, 1.0);
 
     // init caches
     g_hUserColorCache = new StringMap();
@@ -85,6 +91,7 @@ public void OnPluginStart() {
     
     // hook player events
     HookEvent("player_say", Event_PlayerSay);
+    HookEvent("say_team", Event_PlayerSayTeam);
     HookEvent("player_connect", Event_PlayerConnect);
     HookEvent("player_disconnect", Event_PlayerDisconnect);
     
@@ -94,6 +101,8 @@ public void OnPluginStart() {
     g_cvLogConnections.AddChangeHook(OnConVarChanged);
     g_cvUseRoleColors.AddChangeHook(OnConVarChanged);
     g_cvUseNicknames.AddChangeHook(OnConVarChanged);
+    g_cvShowSteamId.AddChangeHook(OnConVarChanged);
+    g_cvShowDiscordPrefix.AddChangeHook(OnConVarChanged);
     
     // create operational config file if it doesn't exist
     char configFile[64];
@@ -135,6 +144,8 @@ void LoadOperationalSettings() {
     g_bLogConnections = g_cvLogConnections.BoolValue;
     g_bUseRoleColors = g_cvUseRoleColors.BoolValue;
     g_bUseNicknames = g_cvUseNicknames.BoolValue;
+    g_bShowSteamId = g_cvShowSteamId.BoolValue;
+    g_bShowDiscordPrefix = g_cvShowDiscordPrefix.BoolValue;
 }
 
 void LoadSensitiveCredentials() {
@@ -150,7 +161,6 @@ void LoadSensitiveCredentials() {
         
         CreateExampleConfig(configPath);
         
-        LogError("Please edit the config file with your Discord credentials and restart the plugin.");
         delete kv;
         return;
     }
@@ -208,7 +218,7 @@ void CreateExampleConfig(const char[] configPath) {
     
     file.Close();
     LogMessage("Created example configuration file at %s", configPath);
-    LogMessage("Please edit this file with your credentials and restart the plugin.");
+    LogMessage("Please edit this file with your Discord bot token, webhook URL, and other credentials, then restart the plugin.");
 }
 
 void StartTimer() {
@@ -454,8 +464,25 @@ public Action Event_PlayerSay(Event event, const char[] name, bool dontBroadcast
         return Plugin_Continue;
     }
     
-    bool isTeamChat = event.GetBool("teamonly");
-    SendToDiscord(client, message, isTeamChat);
+    SendToDiscord(client, message, false);
+    return Plugin_Continue;
+}
+
+public Action Event_PlayerSayTeam(Event event, const char[] name, bool dontBroadcast) {
+    int client = GetClientOfUserId(event.GetInt("userid"));
+    
+    if (!IsValidClient(client) || IsChatTrigger()) {
+        return Plugin_Continue;
+    }
+    
+    char message[256];
+    event.GetString("text", message, sizeof(message));
+    
+    if (strlen(message) == 0) {
+        return Plugin_Continue;
+    }
+    
+    SendToDiscord(client, message, true);
     return Plugin_Continue;
 }
 
@@ -961,16 +988,28 @@ void GetDiscordRoleColor(const char[] userId, const char[] username, const char[
     }
     
     if (!g_bUseRoleColors || strlen(g_sGuildId) == 0 || strlen(g_sBotToken) == 0) {
-        PrintToChatAll("\x075865F2[Discord] %s\x01 :  %s", displayName, content);
+        if (g_bShowDiscordPrefix) {
+            PrintToChatAll("\x075865F2[Discord] %s\x01 :  %s", displayName, content);
+        } else {
+            PrintToChatAll("\x075865F2%s\x01 :  %s", displayName, content);
+        }
         return;
     }
     
     char cachedColor[8];
     if (GetCachedDiscordData(g_hUserColorCache, userId, cachedColor, sizeof(cachedColor), DISCORD_COLOR_TTL)) {
         if (strlen(cachedColor) > 0) {
-            PrintToChatAll("\x075865F2[Discord] %s%s\x01 :  %s", cachedColor, displayName, content);
+            if (g_bShowDiscordPrefix) {
+                PrintToChatAll("\x075865F2[Discord] %s%s\x01 :  %s", cachedColor, displayName, content);
+            } else {
+                PrintToChatAll("%s%s\x01 :  %s", cachedColor, displayName, content);
+            }
         } else {
-            PrintToChatAll("\x075865F2[Discord] %s\x01 :  %s", displayName, content);
+            if (g_bShowDiscordPrefix) {
+                PrintToChatAll("\x075865F2[Discord] %s\x01 :  %s", displayName, content);
+            } else {
+                PrintToChatAll("\x075865F2%s\x01 :  %s", displayName, content);
+            }
         }
         return;
     }
@@ -1052,16 +1091,28 @@ public void OnDiscordMemberResponse(HTTPResponse response, DataPack pack) {
     SetCachedDiscordData(g_hUserColorCache, userId, colorPrefix);
     
     if (strlen(colorPrefix) > 0) {
-        PrintToChatAll("\x075865F2[Discord] %s%s\x01 :  %s", colorPrefix, displayName, content);
+        if (g_bShowDiscordPrefix) {
+            PrintToChatAll("\x075865F2[Discord] %s%s\x01 :  %s", colorPrefix, displayName, content);
+        } else {
+            PrintToChatAll("%s%s\x01 :  %s", colorPrefix, displayName, content);
+        }
     } else {
-        PrintToChatAll("\x075865F2[Discord] %s\x01 :  %s", displayName, content);
+        if (g_bShowDiscordPrefix) {
+            PrintToChatAll("\x075865F2[Discord] %s\x01 :  %s", displayName, content);
+        } else {
+            PrintToChatAll("\x075865F2%s\x01 :  %s", displayName, content);
+        }
     }
 }
 
 void GetTopRoleColor(JSONArray roleIds, const char[] userId, const char[] username, const char[] content) {
     if (roleIds == null || roleIds.Length == 0) {
         SetCachedDiscordData(g_hUserColorCache, userId, "");
-        PrintToChatAll("\x075865F2[Discord] %s\x01 :  %s", username, content);
+        if (g_bShowDiscordPrefix) {
+            PrintToChatAll("\x075865F2[Discord] %s\x01 :  %s", username, content);
+        } else {
+            PrintToChatAll("\x075865F2%s\x01 :  %s", username, content);
+        }
         return;
     }
     
@@ -1144,9 +1195,17 @@ public void OnDiscordRolesResponse(HTTPResponse response, DataPack pack) {
     SetCachedDiscordData(g_hUserColorCache, userId, colorPrefix);
     
     if (strlen(colorPrefix) > 0) {
-        PrintToChatAll("\x075865F2[Discord] %s%s\x01 :  %s", colorPrefix, username, content);
+        if (g_bShowDiscordPrefix) {
+            PrintToChatAll("\x075865F2[Discord] %s%s\x01 :  %s", colorPrefix, username, content);
+        } else {
+            PrintToChatAll("%s%s\x01 :  %s", colorPrefix, username, content);
+        }
     } else {
-        PrintToChatAll("\x075865F2[Discord] %s\x01 :  %s", username, content);
+        if (g_bShowDiscordPrefix) {
+            PrintToChatAll("\x075865F2[Discord] %s\x01 :  %s", username, content);
+        } else {
+            PrintToChatAll("\x075865F2%s\x01 :  %s", username, content);
+        }
     }
 }
 
@@ -1166,10 +1225,18 @@ void SendToDiscord(int client, const char[] message, bool isTeamChat = false) {
     EscapeUserContent(playerName, escapedPlayerName, sizeof(escapedPlayerName));
     
     char webhookUsername[224];
-    if (isTeamChat) {
-        Format(webhookUsername, sizeof(webhookUsername), "(TEAM) %s %s", escapedPlayerName, steamId);
+    if (g_bShowSteamId) {
+        if (isTeamChat) {
+            Format(webhookUsername, sizeof(webhookUsername), "(TEAM) %s %s", escapedPlayerName, steamId);
+        } else {
+            Format(webhookUsername, sizeof(webhookUsername), "%s %s", escapedPlayerName, steamId);
+        }
     } else {
-        Format(webhookUsername, sizeof(webhookUsername), "%s %s", escapedPlayerName, steamId);
+        if (isTeamChat) {
+            Format(webhookUsername, sizeof(webhookUsername), "(TEAM) %s", escapedPlayerName);
+        } else {
+            Format(webhookUsername, sizeof(webhookUsername), "%s", escapedPlayerName);
+        }
     }
     
     if (strlen(g_sSteamApiKey) > 0) {

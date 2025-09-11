@@ -6,19 +6,21 @@
 
 ## Overview
 
-Enables real-time, two-way chat between your Source Engine game and a Discord server. Players can chat with Discord users directly from in-game, while Discord messages appear in the game chat with proper formatting and role colors.
+A SourceMod plugin that syncs chat between your Source Engine server and Discord. Players can talk with Discord users directly from in-game, while Discord messages appear in chat with nicknames and role colors.
 
 <p align="center">
   <img src="https://github.com/user-attachments/assets/7aa1282d-81d4-4bdd-824c-c934d4dd817d" alt="Side by Side"/>
+  <br>
+  <em>Image courtesy of boba (matchaland.net)</em>
 </p>
 
 ## Features
 
-- **Two-way chat sync**: Relays messages both Game → Discord and Discord → Game
-- **Discord role colors**: Shows usernames in-game with their highest role color
-- **Steam profile integration**: Fetches players’ avatars and SteamID3s for moderation
-- **Configurable logging**: Optional join/leave notifications for players
-- **Automatic recovery**: Handles network issues and Discord outages smoothly
+- **Two-way chat sync**: Game ↔ Discord messages in real time
+- **Mentions**: Handles user, role, and channel mentions seamlessly
+- **Steam profile integration**: Player avatars and steamID3s for ease of moderation 
+- **Server event logs**: Join/leave notifications for players
+- **Caching system**: Fast lookups for avatars, nicknames, role colors, etc. 
 
 ## Requirements
 
@@ -38,22 +40,23 @@ Enables real-time, two-way chat between your Source Engine game and a Discord se
 
 ## Configuration
 
-SourceCord uses a secure two-part configuration system:
-
 ### 1. Operational Settings
 
 On first load, the plugin creates `cfg/sourcemod/sourcecord.cfg` with operational settings:
 
 ```cfg
-sc_interval "1.0"        // Check Discord messages every 1 second
-sc_log_connections "0"   // Log player connections to Discord (disabled by default)
-sc_use_role_colors "0"   // Show Discord role colors in-game (disabled by default)  
-sc_use_nicknames "1"     // Use Discord server nicknames (enabled by default)
+sc_interval "1.0"              // Check Discord messages every x second(s)
+sc_log_connections "1"         // Log player connections to Discord? (enabled by default)
+sc_use_role_colors "1"         // Show Discord role colors in-game? (enabled by default)  
+sc_use_nicknames "1"           // Use Discord server nicknames? (enabled by default)
+sc_show_steam_id "1"           // Show steamID3 in Discord messages? (enabled by default)
+sc_show_discord_prefix "1"     // Show [Discord] prefix in chat messages? (enabled by default)
+sc_discord_color "5865F2"      // Hex color code for Discord usernames (blurple by default)
 ```
 
 ### 2. Credentials Setup
 
-The plugin will also automatically create `addons/sourcemod/configs/sourcecord.cfg` if it doesn't exist.
+The plugin will also create `addons/sourcemod/configs/sourcecord.cfg` if it doesn't exist.
 
 **Edit the config file** with your sensitive credentials:
 
@@ -79,10 +82,13 @@ The plugin will also automatically create `addons/sourcemod/configs/sourcecord.c
 
 | ConVar | Description | Default | Range |
 |--------|-------------|---------|-------|
-| `sc_interval` | Discord check interval (seconds) | 1.0 | 0.1 - 10.0 |
-| `sc_log_connections` | Log player connect/disconnects | 0 | 0 - 1 |
-| `sc_use_role_colors` | Use Discord role colors for usernames | 0 | 0 - 1 |
+| `sc_interval` | Discord check interval (seconds) | 1.0 | 1.0 - 10.0 |
+| `sc_log_connections` | Log player connect/disconnects | 1 | 0 - 1 |
+| `sc_use_role_colors` | Use Discord role colors for usernames | 1 | 0 - 1 |
 | `sc_use_nicknames` | Use Discord server nicknames instead of global usernames | 1 | 0 - 1 |
+| `sc_show_steam_id` | Show Steam ID in Discord messages | 1 | 0 - 1 |
+| `sc_show_discord_prefix` | Show [Discord] prefix in chat messages | 1 | 0 - 1 |
+| `sc_discord_color` | Hex color code for Discord usernames (without # prefix) | "5865F2" | 6-char hex |
 | `sc_config_file` | Config filename (without .cfg) - console only | "sourcecord" | - |
 
 ### Credentials Configuration (KeyValues Config File)
@@ -95,7 +101,29 @@ The plugin will also automatically create `addons/sourcemod/configs/sourcecord.c
 | `Discord.webhook_url` | Discord Webhook URL | `configs/sourcecord.cfg` |
 | `Steam.api_key` | Steam API key | `configs/sourcecord.cfg` |
 
-## Discord Integration Setup
+## Customization Options
+
+### Steam ID Display
+Control whether Steam IDs appear in Discord messages:
+- **Enabled** (`sc_show_steam_id 1`): "PlayerName [U:1:123456789]"
+- **Disabled** (`sc_show_steam_id 0`): "PlayerName"
+
+### Discord Prefix
+Control whether the `[Discord]` prefix appears in game chat:
+- **Enabled** (`sc_show_discord_prefix 1`): "[Discord] Username: message"
+- **Disabled** (`sc_show_discord_prefix 0`): "Username: message"
+
+### Discord Username Color
+Customize the color of Discord usernames in game chat using hex codes:
+- **Default**: `sc_discord_color "5865F2"` (Discord blurple)
+- **Custom examples**: 
+  - `sc_discord_color "FF0000"` (red)
+  - `sc_discord_color "00FF00"` (green)
+  - `sc_discord_color "00FFFF"` (blue)
+
+> **Note**: When Discord role colors are enabled (`sc_use_role_colors 1`), user role colors take precedence over `sc_discord_color`.
+
+## Discord Setup
 
 SourceCord requires **both** a bot token and a webhook URL.
 
@@ -136,7 +164,7 @@ Use this URL to invite your bot with the required permissions (replace `<YOUR_BO
 https://discord.com/api/oauth2/authorize?client_id=<YOUR_BOT_CLIENT_ID>&permissions=66560&scope=bot
 ```
 
-⚠️ This only sets permissions - you also need to enable the required intents in Step 2.
+> ⚠️ This only sets permissions - you also need to enable the required intents in Step 2.
 
 ### Webhook Setup
 
