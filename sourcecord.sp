@@ -70,6 +70,9 @@ ArrayList g_hMessageIdOrder;
 // team chat tracking
 bool g_bClientTeamChat[MAXPLAYERS + 1];
 
+// connection state tracking
+bool g_bClientConnected[MAXPLAYERS + 1];
+
 public void OnPluginStart() {
     g_cvConfigFile = CreateConVar("sc_config_file", "sourcecord", "Config filename (without .cfg)", FCVAR_NOTIFY | FCVAR_DONTRECORD);
     g_cvUpdateInterval = CreateConVar("sc_interval", "1.0", "Discord check interval (seconds)", FCVAR_NOTIFY, true, 1.0, true, 10.0);
@@ -97,7 +100,7 @@ public void OnPluginStart() {
     
     // hook player events
     HookEvent("player_say", Event_PlayerSay);
-    HookEvent("player_connect", Event_PlayerConnect);
+    HookEvent("player_activate", Event_PlayerConnect);
     HookEvent("player_disconnect", Event_PlayerDisconnect);
     
     // hook convar changes
@@ -510,6 +513,11 @@ public Action Event_PlayerConnect(Event event, const char[] name, bool dontBroad
     
     int client = GetClientOfUserId(event.GetInt("userid"));
     
+    // mark as connected
+    if (client > 0 && client <= MAXPLAYERS) {
+        g_bClientConnected[client] = true;
+    }
+    
     SendWebhookWithEscaping("Server", msg, "", false);
     
     return Plugin_Continue;
@@ -529,6 +537,12 @@ public Action Event_PlayerDisconnect(Event event, const char[] name, bool dontBr
     if (client > 0 && IsFakeClient(client)) {
         return Plugin_Continue;
     }
+    
+    if (client <= 0 || client > MAXPLAYERS || !g_bClientConnected[client]) {
+        return Plugin_Continue;
+    }
+    
+    g_bClientConnected[client] = false;
     
     char playerName[64], escapedPlayerName[128], reason[128], escapedReason[256], msg[512];
     event.GetString("name", playerName, sizeof(playerName));
