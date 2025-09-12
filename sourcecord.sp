@@ -123,9 +123,6 @@ public void OnConfigsExecuted() {
     
     LoadSensitiveCredentials();
     LoadOperationalSettings();
-}
-
-public void OnMapStart() {
     StartTimer();
 }
 
