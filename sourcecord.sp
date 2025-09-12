@@ -5,7 +5,7 @@
 #include <sdktools>
 #include <ripext>
 
-#define PLUGIN_VERSION "1.0.2"
+#define PLUGIN_VERSION "1.0.3"
 
 #define AVATAR_CACHE_TTL 1800.0  // 30 minutes
 #define DISCORD_NICK_TTL 1800.0  // 30 minutes
