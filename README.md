@@ -189,7 +189,7 @@ https://discord.com/api/oauth2/authorize?client_id=<YOUR_BOT_CLIENT_ID>&permissi
 2. Create a new webhook
 3. Copy the webhook URL and add it to your `configs/sourcecord.cfg` file as `webhook_url`
 
-## Getting Discord IDs
+### Getting Discord IDs
 
 - **Channel ID**: Right-click the channel → **Copy ID** (add as `channel_id` in config)
 - **Guild ID**: Right-click the server name → **Copy ID** (add as `guild_id` in config)
