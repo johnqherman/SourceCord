@@ -20,50 +20,52 @@ public Plugin myinfo = {
     url = "https://github.com/johnqherman/SourceCord/"
 };
 
-// convars                
-ConVar g_cvConfigFile;                            
-ConVar g_cvUpdateInterval;                        
-ConVar g_cvLogConnections;                        
-ConVar g_cvUseRoleColors;                         
+// convars
+ConVar g_cvConfigFile;
+ConVar g_cvUpdateInterval;
+ConVar g_cvLogConnections;
+ConVar g_cvUseRoleColors;
 ConVar g_cvUseNicknames;
 ConVar g_cvShowSteamId;
-ConVar g_cvShowDiscordPrefix;                          
-                                                  
-// settings           
-float g_fUpdateInterval;                          
-bool g_bLogConnections;                           
-bool g_bUseRoleColors;                            
+ConVar g_cvShowDiscordPrefix;
+ConVar g_cvDiscordColor;
+
+// settings
+float g_fUpdateInterval;
+bool g_bLogConnections;
+bool g_bUseRoleColors;
 bool g_bUseNicknames;
 bool g_bShowSteamId;
-bool g_bShowDiscordPrefix;                             
-                                                  
-// credentials        
-char g_sBotToken[128];                            
-char g_sChannelId[32];                            
-char g_sGuildId[32];                              
-char g_sWebhookUrl[256];                          
-char g_sSteamApiKey[64];                          
-                                                  
-// discord state                               
-char g_sLastMessageId[32];                        
-Handle g_hDiscordTimer;                           
-                                                  
+bool g_bShowDiscordPrefix;
+char g_sDiscordColor[8];
+
+// credentials
+char g_sBotToken[128];
+char g_sChannelId[32];
+char g_sGuildId[32];
+char g_sWebhookUrl[256];
+char g_sSteamApiKey[64];
+
+// discord state
+char g_sLastMessageId[32];
+Handle g_hDiscordTimer;
+
 // error handling
-int g_iFailedRequests;                            
-float g_fNextRetryTime;                           
-                                                  
+int g_iFailedRequests;
+float g_fNextRetryTime;
+
 // cache
-StringMap g_hUserColorCache;                      
-StringMap g_hUserNameCache;                       
-StringMap g_hUserNickCache;                       
-StringMap g_hUserAvatarCache;                     
-StringMap g_hChannelNameCache;                    
-StringMap g_hRoleNameCache;                       
-                                                  
-// message queuing                             
-ArrayList g_hMessageQueue;                        
-StringMap g_hProcessedMessages;                   
-ArrayList g_hMessageIdOrder;                      
+StringMap g_hUserColorCache;
+StringMap g_hUserNameCache;
+StringMap g_hUserNickCache;
+StringMap g_hUserAvatarCache;
+StringMap g_hChannelNameCache;
+StringMap g_hRoleNameCache;
+
+// message queuing
+ArrayList g_hMessageQueue;
+StringMap g_hProcessedMessages;
+ArrayList g_hMessageIdOrder;
 
 public void OnPluginStart() {
     g_cvConfigFile = CreateConVar("sc_config_file", "sourcecord", "Config filename (without .cfg)", FCVAR_NOTIFY | FCVAR_DONTRECORD);
@@ -73,6 +75,7 @@ public void OnPluginStart() {
     g_cvUseNicknames = CreateConVar("sc_use_nicknames", "1", "Use Discord server nicknames instead of global usernames", FCVAR_NOTIFY, true, 0.0, true, 1.0);
     g_cvShowSteamId = CreateConVar("sc_show_steam_id", "1", "Show Steam ID in Discord messages", FCVAR_NOTIFY, true, 0.0, true, 1.0);
     g_cvShowDiscordPrefix = CreateConVar("sc_show_discord_prefix", "1", "Show [Discord] prefix in chat messages", FCVAR_NOTIFY, true, 0.0, true, 1.0);
+    g_cvDiscordColor = CreateConVar("sc_discord_color", "5865F2", "Hex color code for Discord usernames (without # prefix)", FCVAR_NOTIFY);
 
     // init caches
     g_hUserColorCache = new StringMap();
@@ -102,6 +105,7 @@ public void OnPluginStart() {
     g_cvUseNicknames.AddChangeHook(OnConVarChanged);
     g_cvShowSteamId.AddChangeHook(OnConVarChanged);
     g_cvShowDiscordPrefix.AddChangeHook(OnConVarChanged);
+    g_cvDiscordColor.AddChangeHook(OnConVarChanged);
     
     // create operational config file if it doesn't exist
     char configFile[64];
@@ -145,6 +149,13 @@ void LoadOperationalSettings() {
     g_bUseNicknames = g_cvUseNicknames.BoolValue;
     g_bShowSteamId = g_cvShowSteamId.BoolValue;
     g_bShowDiscordPrefix = g_cvShowDiscordPrefix.BoolValue;
+    g_cvDiscordColor.GetString(g_sDiscordColor, sizeof(g_sDiscordColor));
+    
+    // validate hex color format and fallback to default if invalid
+    if (!IsValidHexColor(g_sDiscordColor)) {
+        LogMessage("Invalid hex color format '%s', falling back to default Discord blurple", g_sDiscordColor);
+        strcopy(g_sDiscordColor, sizeof(g_sDiscordColor), "5865F2");
+    }
 }
 
 void LoadSensitiveCredentials() {
@@ -972,9 +983,9 @@ void GetDiscordRoleColor(const char[] userId, const char[] username, const char[
     
     if (!g_bUseRoleColors || strlen(g_sGuildId) == 0 || strlen(g_sBotToken) == 0) {
         if (g_bShowDiscordPrefix) {
-            PrintToChatAll("\x075865F2[Discord] %s\x01 :  %s", displayName, content);
+            PrintToChatAll("\x075865F2[Discord] \x07%s%s\x01 :  %s", g_sDiscordColor, displayName, content);
         } else {
-            PrintToChatAll("\x075865F2%s\x01 :  %s", displayName, content);
+            PrintToChatAll("\x07%s%s\x01 :  %s", g_sDiscordColor, displayName, content);
         }
         return;
     }
@@ -989,9 +1000,9 @@ void GetDiscordRoleColor(const char[] userId, const char[] username, const char[
             }
         } else {
             if (g_bShowDiscordPrefix) {
-                PrintToChatAll("\x075865F2[Discord] %s\x01 :  %s", displayName, content);
+                PrintToChatAll("\x075865F2[Discord] \x07%s%s\x01 :  %s", g_sDiscordColor, displayName, content);
             } else {
-                PrintToChatAll("\x075865F2%s\x01 :  %s", displayName, content);
+                PrintToChatAll("\x07%s%s\x01 :  %s", g_sDiscordColor, displayName, content);
             }
         }
         return;
@@ -1081,9 +1092,9 @@ public void OnDiscordMemberResponse(HTTPResponse response, DataPack pack) {
         }
     } else {
         if (g_bShowDiscordPrefix) {
-            PrintToChatAll("\x075865F2[Discord] %s\x01 :  %s", displayName, content);
+            PrintToChatAll("\x075865F2[Discord] \x07%s%s\x01 :  %s", g_sDiscordColor, displayName, content);
         } else {
-            PrintToChatAll("\x075865F2%s\x01 :  %s", displayName, content);
+            PrintToChatAll("\x07%s%s\x01 :  %s", g_sDiscordColor, displayName, content);
         }
     }
 }
@@ -1092,9 +1103,9 @@ void GetTopRoleColor(JSONArray roleIds, const char[] userId, const char[] userna
     if (roleIds == null || roleIds.Length == 0) {
         SetCachedDiscordData(g_hUserColorCache, userId, "");
         if (g_bShowDiscordPrefix) {
-            PrintToChatAll("\x075865F2[Discord] %s\x01 :  %s", username, content);
+            PrintToChatAll("\x075865F2[Discord] \x07%s%s\x01 :  %s", g_sDiscordColor, username, content);
         } else {
-            PrintToChatAll("\x075865F2%s\x01 :  %s", username, content);
+            PrintToChatAll("\x07%s%s\x01 :  %s", g_sDiscordColor, username, content);
         }
         return;
     }
@@ -1185,9 +1196,9 @@ public void OnDiscordRolesResponse(HTTPResponse response, DataPack pack) {
         }
     } else {
         if (g_bShowDiscordPrefix) {
-            PrintToChatAll("\x075865F2[Discord] %s\x01 :  %s", username, content);
+            PrintToChatAll("\x075865F2[Discord] \x07%s%s\x01 :  %s", g_sDiscordColor, username, content);
         } else {
-            PrintToChatAll("\x075865F2%s\x01 :  %s", username, content);
+            PrintToChatAll("\x07%s%s\x01 :  %s", g_sDiscordColor, username, content);
         }
     }
 }
@@ -1428,6 +1439,23 @@ public void OnPluginEnd() {
 
 bool IsValidClient(int client) {
     return (client > 0 && client <= MaxClients && IsClientConnected(client) && IsClientInGame(client) && !IsFakeClient(client));
+}
+
+bool IsValidHexColor(const char[] color) {
+    int len = strlen(color);
+    
+    if (len != 6) {
+        return false;
+    }
+    
+    for (int i = 0; i < len; i++) {
+        char c = color[i];
+        if (!((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f'))) {
+            return false;
+        }
+    }
+    
+    return true;
 }
 
 bool GetCachedAvatar(const char[] steamId64, char[] avatarUrl, int maxlen) {
