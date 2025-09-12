@@ -63,27 +63,11 @@ jobs:
       run: |
         mkdir -p release
         cp addons/sourcemod/scripting/sourcecord.smx release/
-        
-        cat > release/README.txt << 'EOF'
-        SourceCord v${{ steps.get_version.outputs.version }}
-        Discord chat integration for Source Engine games
-        
-        Installation:
-        1. Upload sourcecord.smx to sourcemod/plugins/
-        2. Configure the plugin using the convars in your server.cfg:
-           - sc_bot_token "your_bot_token"
-           - sc_channel_id "your_channel_id"
-           - sc_webhook_url "your_webhook_url"
-           - sc_steam_key "your_steam_api_key" (optional)
-           - sc_guild_id "your_guild_id" (for role colors)
-        
-        For more information, visit: https://github.com/${{ github.repository }}
-        EOF
 
     - name: Upload to release
       if: github.event_name == 'release'
       run: |
-        gh release upload ${{ github.event.release.tag_name }} ./release/sourcecord.smx ./release/README.txt
+        gh release upload ${{ github.event.release.tag_name }} ./release/sourcecord.smx
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
