@@ -6,9 +6,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to build'
+        description: "Version to build"
         required: true
-        default: 'manual'
+        default: "manual"
 
 permissions:
   contents: write
@@ -16,64 +16,64 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Get version from source
-      id: get_version
-      run: |
-        VERSION=$(grep -oP '#define PLUGIN_VERSION "\K[^"]+' sourcecord.sp)
-        echo "version=$VERSION" >> $GITHUB_OUTPUT
-        echo "Version found: $VERSION"
+      - name: Get version from source
+        id: get_version
+        run: |
+          VERSION=$(grep -oP '#define PLUGIN_VERSION "\K[^"]+' sourcecord.sp)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version found: $VERSION"
 
-    - name: Setup SourceMod
-      run: |
-        wget -q https://sm.alliedmods.net/smdrop/1.11/sourcemod-1.11.0-git6968-linux.tar.gz
-        tar -xzf sourcemod-1.11.0-git6968-linux.tar.gz
-        chmod +x addons/sourcemod/scripting/spcomp
+      - name: Setup SourceMod
+        run: |
+          wget -q https://sm.alliedmods.net/smdrop/1.11/sourcemod-1.11.0-git6968-linux.tar.gz
+          tar -xzf sourcemod-1.11.0-git6968-linux.tar.gz
+          chmod +x addons/sourcemod/scripting/spcomp
 
-    - name: Install dependencies
-      run: |
-        cd addons/sourcemod/scripting/include
-        
-        # install ripext (main file and subdirectory includes)
-        wget -q https://raw.githubusercontent.com/ErikMinekus/sm-ripext/master/pawn/scripting/include/ripext.inc
-        mkdir -p ripext
-        wget -q -O ripext/json.inc https://raw.githubusercontent.com/ErikMinekus/sm-ripext/master/pawn/scripting/include/ripext/json.inc
-        wget -q -O ripext/http.inc https://raw.githubusercontent.com/ErikMinekus/sm-ripext/master/pawn/scripting/include/ripext/http.inc
+      - name: Install dependencies
+        run: |
+          cd addons/sourcemod/scripting/include
 
-    - name: Compile plugin
-      run: |
-        cp sourcecord.sp addons/sourcemod/scripting/
-        
-        cd addons/sourcemod/scripting
-        ./spcomp -iinclude sourcecord.sp
-        
-        if [ ! -f sourcecord.smx ]; then
-          echo "Compilation failed!!!"
-          exit 1
-        fi
-        
-        echo "Compilation successful"
-        ls -la sourcecord.smx
+          # install ripext (main file and subdirectory includes)
+          wget -q https://raw.githubusercontent.com/ErikMinekus/sm-ripext/master/pawn/scripting/include/ripext.inc
+          mkdir -p ripext
+          wget -q -O ripext/json.inc https://raw.githubusercontent.com/ErikMinekus/sm-ripext/master/pawn/scripting/include/ripext/json.inc
+          wget -q -O ripext/http.inc https://raw.githubusercontent.com/ErikMinekus/sm-ripext/master/pawn/scripting/include/ripext/http.inc
 
-    - name: Create release package
-      run: |
-        mkdir -p release
-        cp addons/sourcemod/scripting/sourcecord.smx release/
+      - name: Compile plugin
+        run: |
+          cp sourcecord.sp addons/sourcemod/scripting/
 
-    - name: Upload to release
-      if: github.event_name == 'release'
-      run: |
-        gh release upload ${{ github.event.release.tag_name }} ./release/sourcecord.smx
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          cd addons/sourcemod/scripting
+          ./spcomp -iinclude sourcecord.sp
 
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: sourcecord-v${{ steps.get_version.outputs.version }}
-        path: release/
-        retention-days: 30
+          if [ ! -f sourcecord.smx ]; then
+            echo "Compilation failed!!!"
+            exit 1
+          fi
+
+          echo "Compilation successful"
+          ls -la sourcecord.smx
+
+      - name: Create release package
+        run: |
+          mkdir -p release
+          cp addons/sourcemod/scripting/sourcecord.smx release/
+
+      - name: Upload to release
+        if: github.event_name == 'release'
+        run: |
+          gh release upload ${{ github.event.release.tag_name }} ./release/sourcecord.smx
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sourcecord-v${{ steps.get_version.outputs.version }}
+          path: release/
+          retention-days: 30

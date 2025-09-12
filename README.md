@@ -20,9 +20,9 @@ Players can talk with Discord users directly from in-game, while Discord message
 
 - **Two-way chat sync**: Game ↔ Discord messages in real time
 - **Mentions**: Handles user, role, and channel mentions seamlessly
-- **Steam profile integration**: Player avatars and steamID3s for ease of moderation 
+- **Steam profile integration**: Player avatars and steamID3s for ease of moderation
 - **Server event logs**: Join/leave notifications for players
-- **Caching system**: Fast lookups for avatars, nicknames, role colors, etc. 
+- **Caching system**: Fast lookups for avatars, nicknames, role colors, etc.
 
 ## Requirements
 
@@ -49,7 +49,7 @@ On first load, the plugin creates `cfg/sourcemod/sourcecord.cfg` with operationa
 ```cfg
 sc_interval "1.0"              // Check Discord messages every x second(s)
 sc_log_connections "1"         // Log player connections to Discord? (enabled by default)
-sc_use_role_colors "1"         // Show Discord role colors in-game? (enabled by default)  
+sc_use_role_colors "1"         // Show Discord role colors in-game? (enabled by default)
 sc_use_nicknames "1"           // Use Discord server nicknames? (enabled by default)
 sc_show_steam_id "1"           // Show steamID3 in Discord messages? (enabled by default)
 sc_show_discord_prefix "1"     // Show [Discord] prefix in chat messages? (enabled by default)
@@ -68,11 +68,11 @@ The plugin will also create `addons/sourcemod/configs/sourcecord.cfg` if it does
     "Discord"
     {
         "bot_token"     ""  // Discord Bot token
-        "channel_id"    ""  // Discord channel ID  
+        "channel_id"    ""  // Discord channel ID
         "guild_id"      ""  // Discord guild/server ID
         "webhook_url"   ""  // Discord Webhook URL
     }
-    
+
     "Steam"
     {
         "api_key"       ""  // Steam API key
@@ -82,58 +82,64 @@ The plugin will also create `addons/sourcemod/configs/sourcecord.cfg` if it does
 
 ### Configuration Variables (Console/CVars)
 
-| ConVar | Description | Default | Range |
-|--------|-------------|---------|-------|
-| `sc_interval` | Discord check interval (seconds) | 1.0 | 1.0 - 10.0 |
-| `sc_log_connections` | Log player connect/disconnects | 1 | 0 - 1 |
-| `sc_use_role_colors` | Use Discord role colors for usernames | 1 | 0 - 1 |
-| `sc_use_nicknames` | Use Discord server nicknames instead of global usernames | 1 | 0 - 1 |
-| `sc_show_steam_id` | Show Steam ID in Discord messages | 1 | 0 - 1 |
-| `sc_show_discord_prefix` | Show [Discord] prefix in chat messages | 1 | 0 - 1 |
-| `sc_discord_color` | Hex color code for Discord usernames (without # prefix) | "5865F2" | 6-char hex |
-| `sc_config_file` | Config filename (without .cfg) - console only | "sourcecord" | - |
+| ConVar                   | Description                                              | Default      | Range      |
+| ------------------------ | -------------------------------------------------------- | ------------ | ---------- |
+| `sc_interval`            | Discord check interval (seconds)                         | 1.0          | 1.0 - 10.0 |
+| `sc_log_connections`     | Log player connect/disconnects                           | 1            | 0 - 1      |
+| `sc_use_role_colors`     | Use Discord role colors for usernames                    | 1            | 0 - 1      |
+| `sc_use_nicknames`       | Use Discord server nicknames instead of global usernames | 1            | 0 - 1      |
+| `sc_show_steam_id`       | Show Steam ID in Discord messages                        | 1            | 0 - 1      |
+| `sc_show_discord_prefix` | Show [Discord] prefix in chat messages                   | 1            | 0 - 1      |
+| `sc_discord_color`       | Hex color code for Discord usernames (without # prefix)  | "5865F2"     | 6-char hex |
+| `sc_config_file`         | Config filename (without .cfg) - console only            | "sourcecord" | -          |
 
 ### Credentials Configuration (KeyValues Config File)
 
-| Setting | Description | Location |
-|---------|-------------|----------|
-| `Discord.bot_token` | Discord Bot token | `configs/sourcecord.cfg` |
-| `Discord.channel_id` | Discord channel ID | `configs/sourcecord.cfg` |
-| `Discord.guild_id` | Discord guild/server ID | `configs/sourcecord.cfg` |
-| `Discord.webhook_url` | Discord Webhook URL | `configs/sourcecord.cfg` |
-| `Steam.api_key` | Steam API key | `configs/sourcecord.cfg` |
+| Setting               | Description             | Location                 |
+| --------------------- | ----------------------- | ------------------------ |
+| `Discord.bot_token`   | Discord Bot token       | `configs/sourcecord.cfg` |
+| `Discord.channel_id`  | Discord channel ID      | `configs/sourcecord.cfg` |
+| `Discord.guild_id`    | Discord guild/server ID | `configs/sourcecord.cfg` |
+| `Discord.webhook_url` | Discord Webhook URL     | `configs/sourcecord.cfg` |
+| `Steam.api_key`       | Steam API key           | `configs/sourcecord.cfg` |
 
 ## Customization Options
 
 ### Steam ID Display
+
 Control whether Steam IDs appear in Discord messages:
+
 - **Enabled** (`sc_show_steam_id 1`):
 
-<img src="https://github.com/user-attachments/assets/04070f11-598e-4d2e-82fa-c21eb32c59f7"></img>
+<img src="https://github.com/user-attachments/assets/04070f11-598e-4d2e-82fa-c21eb32c59f7" style="margin-top: -10px; margin-bottom: -10px;"></img>
 
 - **Disabled** (`sc_show_steam_id 0`):
 
-<img src="https://github.com/user-attachments/assets/b5e24967-371d-4afe-8d15-8a58f6ed2cbb"></img>
+<img src="https://github.com/user-attachments/assets/b5e24967-371d-4afe-8d15-8a58f6ed2cbb" style="margin-top: -10px; margin-bottom: -10px;"></img>
 
 ### Discord Prefix
+
 Control whether the `[Discord]` prefix appears in game chat:
+
 - **Enabled** (`sc_show_discord_prefix 1`):
 
-<img src="https://github.com/user-attachments/assets/13137d50-95f8-4a34-9df1-afd090e8017a"></img>
+<img src="https://github.com/user-attachments/assets/13137d50-95f8-4a34-9df1-afd090e8017a" style="margin-top: -10px; margin-bottom: -10px;"></img>
 
 - **Disabled** (`sc_show_discord_prefix 0`):
 
-<img src="https://github.com/user-attachments/assets/57198244-f98c-44fe-a17e-1712003adfa2"></img>
+<img src="https://github.com/user-attachments/assets/57198244-f98c-44fe-a17e-1712003adfa2" style="margin-top:-10px; margin-bottom: -10px;"></img>
 
 ### Discord Username Color
+
 Customize the default color of Discord usernames in game chat:
+
 - **Default**: (`sc_discord_color "5865F2"`):
 
-<img src="https://github.com/user-attachments/assets/41d93727-3cdf-41de-b37f-00ea2bbef75d"></img>
+<img src="https://github.com/user-attachments/assets/41d93727-3cdf-41de-b37f-00ea2bbef75d" style="margin-top:-10px; margin-bottom: -10px;"></img>
 
-- **Custom**: (`sc_discord_color "EF0988"`): 
+- **Custom**: (`sc_discord_color "EF0988"`):
 
-<img src="https://github.com/user-attachments/assets/ddb63c07-ace9-40a9-a052-d874ccd1cf6f"></img>
+<img src="https://github.com/user-attachments/assets/ddb63c07-ace9-40a9-a052-d874ccd1cf6f" style="margin-top: -10px; margin-bottom: -10px;"></img>
 
 > ⚠️**Note**: When Discord role colors are enabled (`sc_use_role_colors 1`), user role colors take precedence over `sc_discord_color`.
 
@@ -159,8 +165,9 @@ You'll set up both in the steps below.
 1. In the Discord Developer Portal, go to your bot's **Bot** settings page
 2. Scroll down to **Privileged Gateway Intents**
 3. Enable these intents:
-  - **Server Members Intent**: Required for fetching member nicknames and role information.
-  - **Message Content Intent**: Required to read the actual content of Discord messages.
+
+- **Server Members Intent**: Required for fetching member nicknames and role information.
+- **Message Content Intent**: Required to read the actual content of Discord messages.
 
   <img width="614" height="186" src="https://github.com/user-attachments/assets/08214ddf-2cbf-4451-bf0e-88010f3f02a6" />
 
