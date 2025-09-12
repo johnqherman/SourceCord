@@ -13,7 +13,7 @@ Players can talk with Discord users directly from in-game, while Discord message
 <p align="center">
   <img src="https://github.com/user-attachments/assets/7aa1282d-81d4-4bdd-824c-c934d4dd817d" alt="Side by Side"/>
   <br>
-  <em>Image courtesy of <a href="https://github.com/bobatealee">boba</a></em>
+  <em>Images courtesy of <a href="https://github.com/bobatealee">boba</a></em>
 </p>
 
 ## Features
@@ -42,7 +42,7 @@ Players can talk with Discord users directly from in-game, while Discord message
 
 ## Configuration
 
-### 1. Operational Settings
+### 1. Settings
 
 On first load, the plugin creates `cfg/sourcemod/sourcecord.cfg` with operational settings:
 
@@ -53,7 +53,7 @@ sc_use_role_colors "1"         // Show Discord role colors in-game? (enabled by 
 sc_use_nicknames "1"           // Use Discord server nicknames? (enabled by default)
 sc_show_steam_id "1"           // Show steamID3 in Discord messages? (enabled by default)
 sc_show_discord_prefix "1"     // Show [Discord] prefix in chat messages? (enabled by default)
-sc_discord_color "5865F2"      // Hex color code for Discord usernames (blurple by default)
+sc_discord_color "5865F2"      // Hex color code for Discord usernames in game chat (blurple by default)
 ```
 
 ### 2. Credentials Setup
@@ -107,23 +107,35 @@ The plugin will also create `addons/sourcemod/configs/sourcecord.cfg` if it does
 
 ### Steam ID Display
 Control whether Steam IDs appear in Discord messages:
-- **Enabled** (`sc_show_steam_id 1`): "PlayerName [U:1:123456789]"
-- **Disabled** (`sc_show_steam_id 0`): "PlayerName"
+- **Enabled** (`sc_show_steam_id 1`):
+
+<img src="https://github.com/user-attachments/assets/04070f11-598e-4d2e-82fa-c21eb32c59f7"></img>
+
+- **Disabled** (`sc_show_steam_id 0`):
+
+<img src="https://github.com/user-attachments/assets/b5e24967-371d-4afe-8d15-8a58f6ed2cbb"></img>
 
 ### Discord Prefix
 Control whether the `[Discord]` prefix appears in game chat:
-- **Enabled** (`sc_show_discord_prefix 1`): "[Discord] Username: message"
-- **Disabled** (`sc_show_discord_prefix 0`): "Username: message"
+- **Enabled** (`sc_show_discord_prefix 1`):
+
+<img src="https://github.com/user-attachments/assets/13137d50-95f8-4a34-9df1-afd090e8017a"></img>
+
+- **Disabled** (`sc_show_discord_prefix 0`):
+
+<img src="https://github.com/user-attachments/assets/57198244-f98c-44fe-a17e-1712003adfa2"></img>
 
 ### Discord Username Color
-Customize the color of Discord usernames in game chat using hex codes:
-- **Default**: `sc_discord_color "5865F2"` (Discord blurple)
-- **Custom examples**: 
-  - `sc_discord_color "FF0000"` (red)
-  - `sc_discord_color "00FF00"` (green)
-  - `sc_discord_color "00FFFF"` (blue)
+Customize the default color of Discord usernames in game chat:
+- **Default**: (`sc_discord_color "5865F2"`):
 
-> **Note**: When Discord role colors are enabled (`sc_use_role_colors 1`), user role colors take precedence over `sc_discord_color`.
+<img src="https://github.com/user-attachments/assets/41d93727-3cdf-41de-b37f-00ea2bbef75d"></img>
+
+- **Custom**: (`sc_discord_color "EF0988"`): 
+
+<img src="https://github.com/user-attachments/assets/ddb63c07-ace9-40a9-a052-d874ccd1cf6f"></img>
+
+> ⚠️**Note**: When Discord role colors are enabled (`sc_use_role_colors 1`), user role colors take precedence over `sc_discord_color`.
 
 ## Discord Setup
 
@@ -147,8 +159,11 @@ You'll set up both in the steps below.
 1. In the Discord Developer Portal, go to your bot's **Bot** settings page
 2. Scroll down to **Privileged Gateway Intents**
 3. Enable these intents:
-   - **Message Content Intent**: Required to read the actual content of Discord messages
-   - **Server Members Intent**: Required for fetching member nicknames and role information
+  - **Server Members Intent**: Required for fetching member nicknames and role information.
+  - **Message Content Intent**: Required to read the actual content of Discord messages.
+
+  <img width="614" height="186" src="https://github.com/user-attachments/assets/08214ddf-2cbf-4451-bf0e-88010f3f02a6" />
+
 4. Save changes
 
 #### Step 3: Invite Bot to Your Server
