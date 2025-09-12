@@ -502,16 +502,20 @@ public Action Event_PlayerConnect(Event event, const char[] name, bool dontBroad
         return Plugin_Continue;
     }
     
-    if (event.GetBool("bot")) {
+    int client = GetClientOfUserId(event.GetInt("userid"));
+    
+    if (client <= 0 || client > MaxClients || !IsClientConnected(client)) {
+        return Plugin_Continue;
+    }
+    
+    if (IsFakeClient(client)) {
         return Plugin_Continue;
     }
     
     char playerName[64], escapedPlayerName[128], msg[256];
-    event.GetString("name", playerName, sizeof(playerName));
+    GetClientName(client, playerName, sizeof(playerName));
     EscapeUserContent(playerName, escapedPlayerName, sizeof(escapedPlayerName));
     Format(msg, sizeof(msg), "**%s** connected to the server", escapedPlayerName);
-    
-    int client = GetClientOfUserId(event.GetInt("userid"));
     
     // mark as connected
     if (client > 0 && client <= MAXPLAYERS) {
