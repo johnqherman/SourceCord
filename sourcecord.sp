@@ -67,6 +67,9 @@ ArrayList g_hMessageQueue;
 StringMap g_hProcessedMessages;
 ArrayList g_hMessageIdOrder;
 
+// team chat tracking
+bool g_bClientTeamChat[MAXPLAYERS + 1];
+
 public void OnPluginStart() {
     g_cvConfigFile = CreateConVar("sc_config_file", "sourcecord", "Config filename (without .cfg)", FCVAR_NOTIFY | FCVAR_DONTRECORD);
     g_cvUpdateInterval = CreateConVar("sc_interval", "1.0", "Discord check interval (seconds)", FCVAR_NOTIFY, true, 1.0, true, 10.0);
@@ -114,6 +117,20 @@ public void OnPluginStart() {
     
 }
 
+public Action OnClientSayCommand(int client, const char[] command, const char[] sArgs) {
+    if (!IsValidClient(client)) {
+        return Plugin_Continue;
+    }
+    
+    g_bClientTeamChat[client] = false;
+    
+    if (StrEqual(command, "say_team") || StrEqual(command, "say_squad")) {
+        g_bClientTeamChat[client] = true;
+    }
+    
+    return Plugin_Continue;
+}
+
 public void OnConfigsExecuted() {
     char configFile[64];
     g_cvConfigFile.GetString(configFile, sizeof(configFile));
@@ -148,9 +165,8 @@ void LoadOperationalSettings() {
     g_bShowDiscordPrefix = g_cvShowDiscordPrefix.BoolValue;
     g_cvDiscordColor.GetString(g_sDiscordColor, sizeof(g_sDiscordColor));
     
-    // validate hex color format and fallback to default if invalid
     if (!IsValidHexColor(g_sDiscordColor)) {
-        LogMessage("Invalid hex color format '%s', falling back to default Discord blurple", g_sDiscordColor);
+        LogMessage("Invalid hex color format '%s'", g_sDiscordColor);
         strcopy(g_sDiscordColor, sizeof(g_sDiscordColor), "5865F2");
     }
 }
@@ -365,11 +381,12 @@ public void OnDiscordResponse(HTTPResponse response, any data) {
     delete messages;
     ProcessMessageQueue();
     
+    // periodic cleanup
     static int cleanupCounter = 0;
     cleanupCounter++;
 
-    // cleanup every 100 successful responses
-    if (cleanupCounter >= 100) {
+    int cleanupThreshold = 100;
+    if (cleanupCounter >= cleanupThreshold) {
         CleanupProcessedMessages();
         cleanupCounter = 0;
     }
@@ -384,10 +401,7 @@ void CleanupProcessedMessages() {
     
     int currentSize = g_hProcessedMessages.Size;
     int entriesToRemove = currentSize - maxCacheSize;
-    
-    LogMessage("LRU cleanup: removing %d oldest entries (current size: %d -> target: %d)", 
-        entriesToRemove, currentSize, maxCacheSize);
-    
+        
     // FIFO from order tracking array
     for (int i = 0; i < entriesToRemove && g_hMessageIdOrder.Length > 0; i++) {
         char oldestId[32];
@@ -415,7 +429,9 @@ void HandleDiscordError(HTTPStatus status) {
     // exponential backoff
     g_iFailedRequests++;
     float backoffDelay = Pow(2.0, float(g_iFailedRequests - 1)) * g_fUpdateInterval;
-    if (backoffDelay > 60.0) { // 60s max
+
+    // cap at 1 min
+    if (backoffDelay > 60.0) {
         backoffDelay = 60.0;
     }
     
@@ -436,7 +452,8 @@ void ProcessMessageQueue() {
     }
     
     // process <= 5 messages per batch
-    int processCount = (queueSize > 5) ? 5 : queueSize;
+    int maxBatchSize = 5;
+    int processCount = (queueSize > maxBatchSize) ? maxBatchSize : queueSize;
     
     for (int i = 0; i < processCount; i++) {
         char messageData[512];
@@ -471,14 +488,16 @@ public Action Event_PlayerSay(Event event, const char[] name, bool dontBroadcast
         return Plugin_Continue;
     }
     
-    bool isTeamChat = event.GetBool("teamonly");
+    bool isTeamChat = g_bClientTeamChat[client];
     
     SendToDiscord(client, message, isTeamChat);
     return Plugin_Continue;
 }
 
 public Action Event_PlayerConnect(Event event, const char[] name, bool dontBroadcast) {
-    if (!g_bLogConnections) return Plugin_Continue;
+    if (!g_bLogConnections) {
+        return Plugin_Continue;
+    }
     
     if (event.GetBool("bot")) {
         return Plugin_Continue;
@@ -497,9 +516,15 @@ public Action Event_PlayerConnect(Event event, const char[] name, bool dontBroad
 }
 
 public Action Event_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast) {
-    if (!g_bLogConnections) return Plugin_Continue;
-    
     int client = GetClientOfUserId(event.GetInt("userid"));
+    
+    if (client > 0 && client <= MAXPLAYERS) {
+        g_bClientTeamChat[client] = false;
+    }
+    
+    if (!g_bLogConnections) {
+        return Plugin_Continue;
+    }
     
     if (client > 0 && IsFakeClient(client)) {
         return Plugin_Continue;
@@ -582,7 +607,9 @@ void ProcessDiscordMentions(const char[] userId, const char[] username, const ch
     while ((pos = StrContains(processedContent[searchStart], "<#", false)) != -1) {
         int actualPos = searchStart + pos;
         int endPos = StrContains(processedContent[actualPos], ">", false);
-        if (endPos == -1) break;
+        if (endPos == -1) {
+            break;
+        }
         endPos += actualPos;
         
         int idStart = actualPos + 2;
@@ -611,7 +638,9 @@ void ProcessDiscordMentions(const char[] userId, const char[] username, const ch
     while ((pos = StrContains(processedContent[searchStart], "<@&", false)) != -1) {
         int actualPos = searchStart + pos;
         int endPos = StrContains(processedContent[actualPos], ">", false);
-        if (endPos == -1) break;
+        if (endPos == -1) {
+            break;
+        }
         endPos += actualPos;
         
         int idStart = actualPos + 3;
@@ -640,7 +669,9 @@ void ProcessDiscordMentions(const char[] userId, const char[] username, const ch
     while ((pos = StrContains(processedContent[searchStart], "<:", false)) != -1) {
         int actualPos = searchStart + pos;
         int endPos = StrContains(processedContent[actualPos], ">", false);
-        if (endPos == -1) break;
+        if (endPos == -1) {
+            break;
+        }
         endPos += actualPos;
         
         int colonPos = -1;
@@ -678,7 +709,9 @@ void ProcessDiscordMentions(const char[] userId, const char[] username, const ch
     while ((pos = StrContains(processedContent[searchStart], "<a:", false)) != -1) {
         int actualPos = searchStart + pos;
         int endPos = StrContains(processedContent[actualPos], ">", false);
-        if (endPos == -1) break;
+        if (endPos == -1) {
+            break;
+        }
         endPos += actualPos;
         
         int colonPos = -1;
@@ -956,7 +989,8 @@ public void OnDiscordRoleNameResponse(HTTPResponse response, DataPack pack) {
 }
 
 void GetDiscordRoleColor(const char[] userId, const char[] username, const char[] content) {
-    bool needsNickname = g_bUseNicknames && strlen(g_sGuildId) > 0 && strlen(g_sBotToken) > 0;
+    bool hasGuildConfig = (strlen(g_sGuildId) > 0 && strlen(g_sBotToken) > 0);
+    bool needsNickname = g_bUseNicknames && hasGuildConfig;
     bool hasNickname = false;
     char cachedNick[64];
     
@@ -966,7 +1000,8 @@ void GetDiscordRoleColor(const char[] userId, const char[] username, const char[
     
     // get display name
     char displayName[64];
-    if (needsNickname && hasNickname && strlen(cachedNick) > 0) {
+    bool useNicknameForDisplay = (needsNickname && hasNickname && strlen(cachedNick) > 0);
+    if (useNicknameForDisplay) {
         strcopy(displayName, sizeof(displayName), cachedNick);
     } else {
         strcopy(displayName, sizeof(displayName), username);
@@ -978,7 +1013,8 @@ void GetDiscordRoleColor(const char[] userId, const char[] username, const char[
         return;
     }
     
-    if (!g_bUseRoleColors || strlen(g_sGuildId) == 0 || strlen(g_sBotToken) == 0) {
+    bool canUseRoleColors = (g_bUseRoleColors && hasGuildConfig);
+    if (!canUseRoleColors) {
         if (g_bShowDiscordPrefix) {
             PrintToChatAll("\x075865F2[Discord] \x07%s%s\x01 :  %s", g_sDiscordColor, displayName, content);
         } else {
@@ -1339,18 +1375,23 @@ public void OnWebhookResponse(HTTPResponse response, any data) {
     
     if (view_as<int>(response.Status) == 0) {
         LogError("Webhook failed: Network/connection error");
-    } else {
-        LogError("Webhook failed with HTTP status %d", response.Status);
-        
-        if (response.Data != null) {
-            JSONObject errorData = view_as<JSONObject>(response.Data);
-            if (errorData != null) {
-                char errorMsg[256];
-                if (errorData.GetString("message", errorMsg, sizeof(errorMsg))) {
-                    LogError("Discord error: %s", errorMsg);
-                }
-            }
-        }
+        return;
+    }
+    
+    LogError("Webhook failed with HTTP status %d", response.Status);
+    
+    if (response.Data == null) {
+        return;
+    }
+    
+    JSONObject errorData = view_as<JSONObject>(response.Data);
+    if (errorData == null) {
+        return;
+    }
+    
+    char errorMsg[256];
+    if (errorData.GetString("message", errorMsg, sizeof(errorMsg))) {
+        LogError("Discord error: %s", errorMsg);
     }
 }
 
@@ -1362,8 +1403,9 @@ void EscapeUserContent(const char[] input, char[] output, int maxlen) {
         char c = input[i];
         
         // wrap urls to prevent embeds
-        if ((c == 'h' && i + 7 < inputLen && StrContains(input[i], "http://", false) == 0) ||
-            (c == 'h' && i + 8 < inputLen && StrContains(input[i], "https://", false) == 0)) {            
+        bool isHttpUrl = (c == 'h' && i + 7 < inputLen && StrContains(input[i], "http://", false) == 0);
+        bool isHttpsUrl = (c == 'h' && i + 8 < inputLen && StrContains(input[i], "https://", false) == 0);
+        if (isHttpUrl || isHttpsUrl) {            
             int urlEnd = i;
             while (urlEnd < inputLen && input[urlEnd] != ' ' && input[urlEnd] != '\n' && input[urlEnd] != '\r' && input[urlEnd] != '\t') {
                 urlEnd++;
@@ -1472,7 +1514,8 @@ bool GetCachedAvatar(const char[] steamId64, char[] avatarUrl, int maxlen) {
     float currentTime = GetGameTime();
     
     // check if expired
-    if (currentTime - cachedTime > AVATAR_CACHE_TTL) {
+    bool isCacheExpired = (currentTime - cachedTime > AVATAR_CACHE_TTL);
+    if (isCacheExpired) {
         g_hUserAvatarCache.Remove(steamId64);
         return false;
     }
@@ -1482,7 +1525,9 @@ bool GetCachedAvatar(const char[] steamId64, char[] avatarUrl, int maxlen) {
 }
 
 void SetCachedAvatar(const char[] steamId64, const char[] avatarUrl) {
-    if (strlen(avatarUrl) == 0) return;
+    if (strlen(avatarUrl) == 0) {
+        return;
+    }
     
     char cachedData[512];
     float currentTime = GetGameTime();
@@ -1507,7 +1552,8 @@ bool GetCachedDiscordData(StringMap cache, const char[] key, char[] data, int ma
     float currentTime = GetGameTime();
     
     // check if expired
-    if (currentTime - cachedTime > ttl) {
+    bool isCacheExpired = (currentTime - cachedTime > ttl);
+    if (isCacheExpired) {
         cache.Remove(key);
         return false;
     }
@@ -1517,7 +1563,9 @@ bool GetCachedDiscordData(StringMap cache, const char[] key, char[] data, int ma
 }
 
 void SetCachedDiscordData(StringMap cache, const char[] key, const char[] data) {
-    if (strlen(data) == 0) return;
+    if (strlen(data) == 0) {
+        return;
+    }
     
     char cachedData[512];
     float currentTime = GetGameTime();
