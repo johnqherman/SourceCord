@@ -26,7 +26,7 @@ Players can talk with Discord users directly from in-game, while Discord message
 
 ## Requirements
 
-- **SourceMod**: Version 1.11 or higher
+- **SourceMod**: Version 1.12 or higher
 - **RipExt Extension**: For HTTP requests to Discord API
 - **Discord Bot**: Bot token with appropriate permissions
 - **Steam API Key**: For fetching player profile information
