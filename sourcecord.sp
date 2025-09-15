@@ -11,6 +11,7 @@
 #define DISCORD_NICK_TTL 1800.0 // 30 minutes
 #define DISCORD_COLOR_TTL 3600.0 // 1 hour
 #define DISCORD_LONG_TTL 86400.0 // 24 hours
+#define CLEANUP_THRESHOLD 100
 
 #define DISCORD_API_BASE_URL "https://discord.com/api/v10"
 #define DISCORD_DEFAULT_COLOR "5865F2"
@@ -692,7 +693,7 @@ bool ProcessRoleMentions(char[] messageContent, int maxContentLength, const char
 	return true;
 }
 
-void ProcessCustomEmojis(char[] content, int maxlen) {
+void ProcessCustomEmojis(char[] messageContent, int maxContentLength) {
 	int searchStartPosition = 0, emojiPosition;
 
 	while((emojiPosition = StrContains(messageContent[searchStartPosition], "<:", false)) != -1) {
@@ -735,44 +736,44 @@ void ProcessCustomEmojis(char[] content, int maxlen) {
 		}
 	}
 
-	searchStart = 0;
-	while((pos = StrContains(content[searchStart], "<a:", false)) != -1) {
-		int actualPos = searchStart + pos;
-		int endPos = StrContains(content[actualPos], ">", false);
-		if (endPos == -1) {
+	searchStartPosition = 0;
+	while((emojiPosition = StrContains(messageContent[searchStartPosition], "<a:", false)) != -1) {
+		int actualEmojiPosition = searchStartPosition + emojiPosition;
+		int emojiEndPosition = StrContains(messageContent[actualEmojiPosition], ">", false);
+		if (emojiEndPosition == -1) {
 			break;
 		}
-		endPos += actualPos;
+		emojiEndPosition += actualEmojiPosition;
 
-		int colonPos = -1;
-		for(int i = actualPos + 3; i < endPos; i++) {
-			if (content[i] == ':') {
-				colonPos = i;
+		int nameColonPosition = -1;
+		for(int i = actualEmojiPosition + 3; i < emojiEndPosition; i++) {
+			if (messageContent[i] == ':') {
+				nameColonPosition = i;
 				break;
 			}
 		}
 
-		if (colonPos != -1) {
-			char emojiName[64];
-			int nameLen = colonPos - (actualPos + 3);
-			if (nameLen > 0 && nameLen < sizeof emojiName) {
-				CopySubstring(content, actualPos + 3, nameLen, emojiName, sizeof emojiName);
+		if (nameColonPosition != -1) {
+			char extractedEmojiName[64];
+			int emojiNameLength = nameColonPosition - (actualEmojiPosition + 3);
+			if (emojiNameLength > 0 && emojiNameLength < sizeof extractedEmojiName) {
+				CopySubstring(messageContent, actualEmojiPosition + 3, emojiNameLength, extractedEmojiName, sizeof extractedEmojiName);
 
-				char fullEmoji[128];
-				CopySubstring(content, actualPos, endPos - actualPos + 1, fullEmoji, sizeof fullEmoji);
+				char fullEmojiMarkup[128];
+				CopySubstring(messageContent, actualEmojiPosition, emojiEndPosition - actualEmojiPosition + 1, fullEmojiMarkup, sizeof fullEmojiMarkup);
 
-				char replacement[128];
-				Format(replacement, sizeof replacement, ":%s:", emojiName);
+				char emojiReplacement[128];
+				Format(emojiReplacement, sizeof emojiReplacement, ":%s:", extractedEmojiName);
 
-				ReplaceString(content, maxlen, fullEmoji, replacement, false);
-				searchStart = 0;
+				ReplaceString(messageContent, maxContentLength, fullEmojiMarkup, emojiReplacement, false);
+				searchStartPosition = 0;
 			}
 			else {
-				searchStart = endPos + 1;
+				searchStartPosition = emojiEndPosition + 1;
 			}
 		}
 		else {
-			searchStart = endPos + 1;
+			searchStartPosition = emojiEndPosition + 1;
 		}
 	}
 }
@@ -1293,17 +1294,17 @@ void SendToDiscord(int client, const char[] message, bool isTeamChat = false) {
 	if (strlen(g_sSteamApiKey) > 0) {
 		char steamId64[32];
 		GetClientAuthId(client, AuthId_SteamID64, steamId64, sizeof steamId64);
-		GetSteamAvatar(steamId64, webhookUsername, chatMessage);
+		GetSteamAvatar(steamId64, webhookUsername, message);
 	}
 	else {
-		SendWebhook(webhookUsername, chatMessage, "");
+		SendWebhook(webhookUsername, message, "");
 	}
 }
 
 void GetSteamAvatar(const char[] steamId64, const char[] webhookUsername, const char[] message) {
 	char cachedPlayerAvatar[256];
 	if (GetCachedAvatar(steamId64, cachedPlayerAvatar, sizeof cachedPlayerAvatar)) {
-		SendWebhook(webhookDisplayUsername, gameMessage, cachedPlayerAvatar);
+		SendWebhook(webhookUsername, message, cachedPlayerAvatar);
 		return ;
 	}
 
@@ -1312,8 +1313,8 @@ void GetSteamAvatar(const char[] steamId64, const char[] webhookUsername, const 
 
 	DataPack steamRequestPack = new DataPack();
 	steamRequestPack.WriteString(steamId64);
-	steamRequestPack.WriteString(webhookDisplayUsername);
-	steamRequestPack.WriteString(gameMessage);
+	steamRequestPack.WriteString(webhookUsername);
+	steamRequestPack.WriteString(message);
 
 	HTTPRequest steamApiRequest = CreateSteamAPIRequest(steamApiRequestUrl);
 	steamApiRequest.Get(OnSteamResponse, steamRequestPack);
