@@ -5,7 +5,7 @@
 #include <sdktools>
 #include <ripext>
 
-#define PLUGIN_VERSION "1.0.3"
+#define PLUGIN_VERSION "1.0.4"
 
 #define AVATAR_CACHE_TTL 1800.0 // 30 minutes
 #define DISCORD_NICK_TTL 1800.0 // 30 minutes
@@ -15,7 +15,6 @@
 
 #define DISCORD_API_BASE_URL "https://discord.com/api/v10"
 #define DISCORD_DEFAULT_COLOR "5865F2"
-#define DISCORD_MESSAGE_LIMIT 5
 #define STEAM_API_BASE_URL "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002"
 
 #define DISCORD_PREFIX_COLOR "\x075865F2"
@@ -301,10 +300,10 @@ public Action Timer_CheckDiscord(Handle timer) {
 
 	char url[256];
 	if (strlen(g_sLastMessageId) > 0) {
-		Format(url, sizeof url, "%s/channels/%s/messages?limit=%d&after=%s", DISCORD_API_BASE_URL, g_sChannelId, DISCORD_MESSAGE_LIMIT, g_sLastMessageId);
+		Format(url, sizeof url, "%s/channels/%s/messages?limit=1&after=%s", DISCORD_API_BASE_URL, g_sChannelId, g_sLastMessageId);
 	}
 	else {
-		Format(url, sizeof url, "%s/channels/%s/messages?limit=%d", DISCORD_API_BASE_URL, g_sChannelId, DISCORD_MESSAGE_LIMIT);
+		Format(url, sizeof url, "%s/channels/%s/messages?limit=1", DISCORD_API_BASE_URL, g_sChannelId);
 	}
 
 	HTTPRequest request = CreateDiscordAPIRequest(url);
@@ -1581,7 +1580,6 @@ bool GetCachedDiscordData(StringMap cache, const char[] key, char[] data, int ma
 }
 
 void SetCachedDiscordData(StringMap cache, const char[] key, const char[] data) {
-
 	if (strlen(data) == 0) {
 		return ;
 	}
