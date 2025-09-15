@@ -24,17 +24,33 @@ Players can talk with Discord users directly from in-game, while Discord message
 - **Server event logs**: Join/leave notifications for players
 - **Caching system**: Fast lookups for avatars, nicknames, role colors, etc.
 
+## Game Compatibility
+
+| Game                             | Status      | 32-bit | 64-bit | Notes                              |
+| -------------------------------- | ----------- | ------ | ------ | ---------------------------------- |
+| Team Fortress 2                  | ✅ Tested   | ✅     | ✅     |
+| Counter-Strike 2                 | ❓ Untested | -      | ❓     |                                    |
+| Counter-Strike: Global Offensive | ❓ Untested | ❓     | -      | Legacy CS:GO                       |
+| Counter-Strike: Source           | ❓ Untested | ❓     | ❓     |                                    |
+| Garry's Mod                      | ❓ Untested | ❓     | ❓     | 64-bit beta available but unstable |
+| Left 4 Dead 2                    | ❓ Untested | ❓     | -      |                                    |
+| Half-Life 2: Deathmatch          | ❓ Untested | ❓     | ❓     |                                    |
+| Insurgency                       | ❓ Untested | ❓     | ❓     |                                    |
+| Day of Defeat: Source            | ❓ Untested | ❓     | ❓     |                                    |
+
+> SourceCord should work with any Source Engine game that supports SourceMod. Share your results in [Discussions](https://github.com/johnqherman/SourceCord/discussions) or report issues in a [bug report](https://github.com/johnqherman/SourceCord/issues/new?template=bug_report.yml).
+
 ## Requirements
 
 - **SourceMod**: Version 1.12 or higher
-- **RipExt Extension**: For HTTP requests to Discord API
+- **REST in Pawn**: For HTTP requests to Discord API
 - **Discord Bot**: Bot token with appropriate permissions
 - **Steam API Key**: For fetching player profile information
 
 ## Installation
 
-1. Install the [RipExt](https://forums.alliedmods.net/showthread.php?t=298024) extension on your server
-2. Download the latest `sourcecord.smx` from releases
+1. Install the [REST in Pawn](https://forums.alliedmods.net/showthread.php?t=298024) extension on your server
+2. Download the latest `sourcecord.smx` from [releases](https://github.com/johnqherman/SourceCord/releases/latest)
 3. Place `sourcecord.smx` in `addons/sourcemod/plugins/`
 4. Load the plugin with `sm plugins load sourcecord` (it will auto-create both config files)
 5. Edit `addons/sourcemod/configs/sourcecord.cfg` with your credentials (see configuration section)
@@ -216,7 +232,7 @@ SourceCord operates **automatically** once configured - no commands or player in
 ### Prerequisites
 
 - SourceMod compiler (`spcomp`)
-- RipExt includes
+- REST in Pawn includes
 
 ### Compilation
 
