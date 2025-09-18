@@ -26,16 +26,16 @@ Players can talk with Discord users directly from in-game, while Discord message
 
 ## Game Compatibility
 
-| Game                             | Status          | 32-bit | 64-bit | Notes                              |
-| -------------------------------- | --------------- | ------ | ------ | ---------------------------------- |
-| Team Fortress 2                  | ✅ Tested       | ✅     | ✅     | Designed for TF2, works flawlessly |
-| Counter-Strike: Global Offensive | ❓ Untested     | ❓     | -      | Legacy CS:GO                       |
-| Counter-Strike: Source           | ❓ Untested     | ❓     | ❓     |                                    |
-| Garry's Mod                      | ❌ Incompatible | ❌     | ❌     | MetaMod/SourceMod incompatible     |
-| Left 4 Dead 2                    | ❓ Untested     | ❓     | -      |                                    |
-| Half-Life 2: Deathmatch          | ❓ Untested     | ❓     | ❓     |                                    |
-| Insurgency                       | ❓ Untested     | ❓     | ❓     |                                    |
-| Day of Defeat: Source            | ❓ Untested     | ❓     | ❓     |                                    |
+| Game                             | Status          | 32-bit | 64-bit | Notes                                     |
+| -------------------------------- | --------------- | ------ | ------ | ----------------------------------------- |
+| Team Fortress 2                  | ✅ Tested       | ✅     | ✅     | Designed for TF2, works flawlessly        |
+| Counter-Strike: Global Offensive | ❓ Untested     | ❓     | -      | Legacy CS:GO                              |
+| Counter-Strike: Source           | ❓ Untested     | ❓     | ❓     |                                           |
+| Garry's Mod                      | ❌ Incompatible | ❌     | ❌     | MetaMod/SourceMod incompatible            |
+| Left 4 Dead 2                    | ❓ Untested     | ❓     | -      |                                           |
+| Half-Life 2: Deathmatch          | ✅ Tested       | ✅     | ✅     | Includes any mod based on Source SDK 2013 |
+| Insurgency                       | ❓ Untested     | ❓     | ❓     |                                           |
+| Day of Defeat: Source            | ❓ Untested     | ❓     | ❓     |                                           |
 
 > SourceCord should work with any Source Engine game that supports SourceMod. Share your results in [Discussions](https://github.com/johnqherman/SourceCord/discussions) or report issues in a [bug report](https://github.com/johnqherman/SourceCord/issues/new?template=bug_report.yml).
 
