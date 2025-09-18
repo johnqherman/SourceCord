@@ -29,7 +29,6 @@ Players can talk with Discord users directly from in-game, while Discord message
 | Game                             | Status          | 32-bit | 64-bit | Notes                              |
 | -------------------------------- | --------------- | ------ | ------ | ---------------------------------- |
 | Team Fortress 2                  | ✅ Tested       | ✅     | ✅     | Designed for TF2, works flawlessly |
-| Counter-Strike 2                 | ❓ Untested     | -      | ❓     |                                    |
 | Counter-Strike: Global Offensive | ❓ Untested     | ❓     | -      | Legacy CS:GO                       |
 | Counter-Strike: Source           | ❓ Untested     | ❓     | ❓     |                                    |
 | Garry's Mod                      | ❌ Incompatible | ❌     | ❌     | MetaMod/SourceMod incompatible     |
