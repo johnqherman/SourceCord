@@ -20,7 +20,7 @@ Players can talk with Discord users directly from in-game, while Discord message
 
 - **Two-way chat sync**: Game ↔ Discord messages in real time
 - **Mentions**: Handles user, role, and channel mentions seamlessly
-- **Steam profile integration**: Player avatars and steamID3s for ease of moderation
+- **Steam profile integration**: Player avatars and configurable Steam ID formats
 - **Server event logs**: Join/leave notifications for players
 - **Caching system**: Fast lookups for avatars, nicknames, role colors, etc.
 
@@ -63,10 +63,10 @@ On first load, the plugin creates `cfg/sourcemod/sourcecord.cfg` with operationa
 
 ```cfg
 sc_interval "1.0"              // Check Discord messages every x second(s)
-sc_log_connections "1"         // Log player connections to Discord? (enabled by default)
+sc_log_connections "1"         // Log player connections (0 = off, 1 = basic, 2 = with IP)
 sc_use_role_colors "1"         // Show Discord role colors in-game? (enabled by default)
 sc_use_nicknames "1"           // Use Discord server nicknames? (enabled by default)
-sc_show_steam_id "1"           // Show steamID3 in Discord messages? (enabled by default)
+sc_show_steam_id "1"           // Show Steam ID format (0 = off, 1 = steamID3, 2 = steamID)
 sc_show_discord_prefix "1"     // Show [Discord] prefix in chat messages? (enabled by default)
 sc_discord_color "5865F2"      // Hex color code for Discord usernames in game chat (blurple by default)
 ```
@@ -100,10 +100,10 @@ The plugin will also create `addons/sourcemod/configs/sourcecord.cfg` if it does
 | ConVar                   | Description                                              | Default      | Range      |
 | ------------------------ | -------------------------------------------------------- | ------------ | ---------- |
 | `sc_interval`            | Discord check interval (seconds)                         | 1.0          | 1.0 - 10.0 |
-| `sc_log_connections`     | Log player connect/disconnects                           | 1            | 0 - 1      |
+| `sc_log_connections`     | Log player connect/disconnects (off, basic, IP)          | 1            | 0 - 2      |
 | `sc_use_role_colors`     | Use Discord role colors for usernames                    | 1            | 0 - 1      |
 | `sc_use_nicknames`       | Use Discord server nicknames instead of global usernames | 1            | 0 - 1      |
-| `sc_show_steam_id`       | Show Steam ID in Discord messages                        | 1            | 0 - 1      |
+| `sc_show_steam_id`       | Show Steam ID format (off, steamID3, steamID)            | 1            | 0 - 2      |
 | `sc_show_discord_prefix` | Show [Discord] prefix in chat messages                   | 1            | 0 - 1      |
 | `sc_discord_color`       | Hex color code for Discord usernames (without # prefix)  | "5865F2"     | 6-char hex |
 | `sc_config_file`         | Config filename (without .cfg) - console only            | "sourcecord" | -          |
@@ -122,15 +122,36 @@ The plugin will also create `addons/sourcemod/configs/sourcecord.cfg` if it does
 
 ### Steam ID Display
 
-Control whether Steam IDs appear in Discord messages:
-
-- **Enabled** (`sc_show_steam_id 1`):
-
-<img src="https://github.com/user-attachments/assets/04070f11-598e-4d2e-82fa-c21eb32c59f7" style="margin-top: -10px; margin-bottom: -10px;"></img>
+Control Steam ID format in both Discord messages and connection logs:
 
 - **Disabled** (`sc_show_steam_id 0`):
 
 <img src="https://github.com/user-attachments/assets/b5e24967-371d-4afe-8d15-8a58f6ed2cbb" style="margin-top: -10px; margin-bottom: -10px;"></img>
+
+- **SteamID3 Format** (`sc_show_steam_id 1`):
+
+<img src="https://github.com/user-attachments/assets/04070f11-598e-4d2e-82fa-c21eb32c59f7" style="margin-top: -10px; margin-bottom: -10px;"></img>
+
+- **SteamID Format** (`sc_show_steam_id 2`):
+
+<img src="https://media.discordapp.net/attachments/1116230546603917383/1421966405150052382/image.png?ex=68daf4e9&is=68d9a369&hm=0bd484176a1e3cb01f1d78bb9635da4bcbabfd933486165ddaf6133d55238683&=&format=webp" style="margin-top: -10px; margin-bottom: -10px;"></img>
+
+> ⚠️**Note**: Steam IDs will appear in chat messages _and_ connection messages when enabled.
+
+### Connection Logging Options
+
+Control what information appears in connect/disconnect messages:
+
+- **Disabled** (`sc_log_connections 0`):
+  - No connection messages sent to Discord
+
+- **Basic Logging** (`sc_log_connections 1`):
+
+<img src="https://media.discordapp.net/attachments/1116230546603917383/1421965879570333819/image.png?ex=68daf46c&is=68d9a2ec&hm=dfac50dbbbbab899ed7b4d12d6d6d9e0b049f71caad305c79bc086c223151ecc&=&format=webp" style="margin-top: -10px; margin-bottom: -10px;"></img>
+
+- **IP Logging** (`sc_log_connections 2`):
+
+<img src="https://cdn.discordapp.com/attachments/1116230546603917383/1421965884171489341/image.png?ex=68daf46d&is=68d9a2ed&hm=487e032e5c3d9baa8e06f85142c2d9ba4504c47fa96cd9a98b9b677e32a15db4" style="margin-top: -10px; margin-bottom: -10px;"></img>
 
 ### Discord Prefix
 

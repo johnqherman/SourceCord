@@ -5,7 +5,7 @@
 #include <sdktools>
 #include <ripext>
 
-#define PLUGIN_VERSION "1.0.4"
+#define PLUGIN_VERSION "1.0.5"
 
 #define AVATAR_CACHE_TTL 1800.0 // 30 minutes
 #define DISCORD_NICK_TTL 1800.0 // 30 minutes
@@ -43,10 +43,10 @@ ConVar g_cvDiscordColor;
 
 // settings
 float g_fUpdateInterval;
-bool g_bLogConnections;
+int g_iLogConnections;
 bool g_bUseRoleColors;
 bool g_bUseNicknames;
-bool g_bShowSteamId;
+int g_iShowSteamId;
 bool g_bShowDiscordPrefix;
 char g_sDiscordColor[8];
 
@@ -87,10 +87,10 @@ bool g_bClientConnected[MAXPLAYERS + 1];
 public void OnPluginStart() {
 	g_cvConfigFile = CreateConVar("sc_config_file", "sourcecord", "Config filename (without .cfg)", FCVAR_NOTIFY | FCVAR_DONTRECORD);
 	g_cvUpdateInterval = CreateConVar("sc_interval", "1.0", "Discord check interval (seconds)", FCVAR_NOTIFY, true, 1.0, true, 10.0);
-	g_cvLogConnections = CreateConVar("sc_log_connections", "1", "Log player connect/disconnects", FCVAR_NOTIFY, true, 0.0, true, 1.0);
+	g_cvLogConnections = CreateConVar("sc_log_connections", "1", "Log player connect/disconnects (off, basic, with IP)", FCVAR_NOTIFY, true, 0.0, true, 2.0);
 	g_cvUseRoleColors = CreateConVar("sc_use_role_colors", "1", "Use Discord role colors for usernames", FCVAR_NOTIFY, true, 0.0, true, 1.0);
 	g_cvUseNicknames = CreateConVar("sc_use_nicknames", "1", "Use Discord server nicknames instead of global usernames", FCVAR_NOTIFY, true, 0.0, true, 1.0);
-	g_cvShowSteamId = CreateConVar("sc_show_steam_id", "1", "Show Steam ID in Discord messages", FCVAR_NOTIFY, true, 0.0, true, 1.0);
+	g_cvShowSteamId = CreateConVar("sc_show_steam_id", "1", "Show Steam ID in Discord messages (off, steamID3, steamID)", FCVAR_NOTIFY, true, 0.0, true, 2.0);
 	g_cvShowDiscordPrefix = CreateConVar("sc_show_discord_prefix", "1", "Show [Discord] prefix in chat messages", FCVAR_NOTIFY, true, 0.0, true, 1.0);
 	g_cvDiscordColor = CreateConVar("sc_discord_color", DISCORD_DEFAULT_COLOR, "Hex color code for Discord usernames (without # prefix)", FCVAR_NOTIFY);
 
@@ -169,10 +169,10 @@ public void OnConVarChanged(ConVar convar, const char[] oldValue, const char[] n
 
 void LoadOperationalSettings() {
 	g_fUpdateInterval = g_cvUpdateInterval.FloatValue;
-	g_bLogConnections = g_cvLogConnections.BoolValue;
+	g_iLogConnections = g_cvLogConnections.IntValue;
 	g_bUseRoleColors = g_cvUseRoleColors.BoolValue;
 	g_bUseNicknames = g_cvUseNicknames.BoolValue;
-	g_bShowSteamId = g_cvShowSteamId.BoolValue;
+	g_iShowSteamId = g_cvShowSteamId.IntValue;
 	g_bShowDiscordPrefix = g_cvShowDiscordPrefix.BoolValue;
 	g_cvDiscordColor.GetString(g_sDiscordColor, sizeof g_sDiscordColor);
 
@@ -491,7 +491,7 @@ public Action Event_PlayerSay(Event event, const char[] name, bool dontBroadcast
 }
 
 public Action Event_PlayerConnect(Event event, const char[] name, bool dontBroadcast) {
-	if (!g_bLogConnections) {
+	if (g_iLogConnections == 0) {
 		return Plugin_Continue;
 	}
 
@@ -505,16 +505,43 @@ public Action Event_PlayerConnect(Event event, const char[] name, bool dontBroad
 		return Plugin_Continue;
 	}
 
-	char playerName[64], escapedPlayerName[128], msg[256];
+	char playerName[64], escapedPlayerName[128], steamId[32], msg[256];
 	GetClientName(client, playerName, sizeof playerName);
 	EscapeUserContent(playerName, escapedPlayerName, sizeof escapedPlayerName);
-	Format(msg, sizeof msg, "**%s** connected to the server", escapedPlayerName);
+
+	if (g_iShowSteamId == 1) {
+		GetClientAuthId(client, AuthId_Steam3, steamId, sizeof steamId);
+	} else if (g_iShowSteamId == 2) {
+		char tempSteamId[32];
+		GetClientAuthId(client, AuthId_Steam2, tempSteamId, sizeof tempSteamId);
+		Format(steamId, sizeof steamId, "(%s)", tempSteamId);
+	}
+
+	if (g_iShowSteamId > 0 && StrEqual(steamId, "STEAM_ID_STOP_IGNORING_RETVALS")) {
+		strcopy(steamId, sizeof steamId, "[Steam Offline]");
+	}
+
+	if (g_iLogConnections == 2 && g_iShowSteamId > 0) {
+		char clientIP[32];
+		GetClientIP(client, clientIP, sizeof clientIP);
+		Format(msg, sizeof msg, "**%s** %s (%s) connected to the server", escapedPlayerName, steamId, clientIP);
+	} else if (g_iLogConnections == 2) {
+		char clientIP[32];
+		GetClientIP(client, clientIP, sizeof clientIP);
+		Format(msg, sizeof msg, "**%s** (%s) connected to the server", escapedPlayerName, clientIP);
+	} else if (g_iShowSteamId > 0) {
+		Format(msg, sizeof msg, "**%s** %s connected to the server", escapedPlayerName, steamId);
+	} else {
+		Format(msg, sizeof msg, "**%s** connected to the server", escapedPlayerName);
+	}
 
 	if (client > 0 && client <= MAXPLAYERS) {
 		g_bClientConnected[client] = true;
 	}
 
-	SendWebhookWithEscaping("Server", msg, "", false);
+	char serverName[64];
+	GetServerName(serverName, sizeof serverName);
+	SendWebhookWithEscaping(serverName, msg, "", false);
 
 	return Plugin_Continue;
 }
@@ -526,7 +553,7 @@ public Action Event_PlayerDisconnect(Event event, const char[] name, bool dontBr
 		g_bClientTeamChat[client] = false;
 	}
 
-	if (!g_bLogConnections) {
+	if (g_iLogConnections == 0) {
 		return Plugin_Continue;
 	}
 
@@ -542,6 +569,7 @@ public Action Event_PlayerDisconnect(Event event, const char[] name, bool dontBr
 
 	char playerName[64],
 	     escapedPlayerName[128],
+	     steamId[32],
 	     reason[128],
 	     escapedReason[256],
 	     msg[512];
@@ -549,9 +577,36 @@ public Action Event_PlayerDisconnect(Event event, const char[] name, bool dontBr
 	event.GetString("reason", reason, sizeof reason);
 	EscapeUserContent(playerName, escapedPlayerName, sizeof escapedPlayerName);
 	EscapeUserContent(reason, escapedReason, sizeof escapedReason);
-	Format(msg, sizeof msg, "**%s** disconnected (%s)", escapedPlayerName, escapedReason);
 
-	SendWebhookWithEscaping("Server", msg, "", false);
+	if (g_iShowSteamId == 1) {
+		GetClientAuthId(client, AuthId_Steam3, steamId, sizeof steamId);
+	} else if (g_iShowSteamId == 2) {
+		char tempSteamId[32];
+		GetClientAuthId(client, AuthId_Steam2, tempSteamId, sizeof tempSteamId);
+		Format(steamId, sizeof steamId, "(%s)", tempSteamId);
+	}
+
+	if (g_iShowSteamId > 0 && StrEqual(steamId, "STEAM_ID_STOP_IGNORING_RETVALS")) {
+		strcopy(steamId, sizeof steamId, "[Steam Offline]");
+	}
+
+	if (g_iLogConnections == 2 && g_iShowSteamId > 0) {
+		char clientIP[32];
+		GetClientIP(client, clientIP, sizeof clientIP);
+		Format(msg, sizeof msg, "**%s** %s (%s) disconnected (%s)", escapedPlayerName, steamId, clientIP, escapedReason);
+	} else if (g_iLogConnections == 2) {
+		char clientIP[32];
+		GetClientIP(client, clientIP, sizeof clientIP);
+		Format(msg, sizeof msg, "**%s** (%s) disconnected (%s)", escapedPlayerName, clientIP, escapedReason);
+	} else if (g_iShowSteamId > 0) {
+		Format(msg, sizeof msg, "**%s** %s disconnected (%s)", escapedPlayerName, steamId, escapedReason);
+	} else {
+		Format(msg, sizeof msg, "**%s** disconnected (%s)", escapedPlayerName, escapedReason);
+	}
+
+	char serverName[64];
+	GetServerName(serverName, sizeof serverName);
+	SendWebhookWithEscaping(serverName, msg, "", false);
 
 	return Plugin_Continue;
 }
@@ -1264,16 +1319,23 @@ void SendToDiscord(int client, const char[] message, bool isTeamChat = false) {
 
 	char playerName[64], steamId[32], escapedPlayerName[128];
 	GetClientName(client, playerName, sizeof playerName);
-	GetClientAuthId(client, AuthId_Steam3, steamId, sizeof steamId);
 
-	if (StrEqual(steamId, "STEAM_ID_STOP_IGNORING_RETVALS")) {
+	if (g_iShowSteamId == 1) {
+		GetClientAuthId(client, AuthId_Steam3, steamId, sizeof steamId);
+	} else if (g_iShowSteamId == 2) {
+		char tempSteamId[32];
+		GetClientAuthId(client, AuthId_Steam2, tempSteamId, sizeof tempSteamId);
+		Format(steamId, sizeof steamId, "(%s)", tempSteamId);
+	}
+
+	if (g_iShowSteamId > 0 && StrEqual(steamId, "STEAM_ID_STOP_IGNORING_RETVALS")) {
 		strcopy(steamId, sizeof steamId, "[Steam Offline]");
 	}
 
 	EscapeUserContent(playerName, escapedPlayerName, sizeof escapedPlayerName);
 
 	char webhookUsername[224];
-	if (g_bShowSteamId) {
+	if (g_iShowSteamId > 0) {
 		if (isTeamChat) {
 			Format(webhookUsername, sizeof webhookUsername, "(TEAM) %s %s", escapedPlayerName, steamId);
 		}
@@ -1495,6 +1557,18 @@ public void OnPluginEnd() {
 	if (g_hMessageIdOrder != null) {
 		delete g_hMessageIdOrder;
 	}
+}
+
+void GetServerName(char[] buffer, int maxlen) {
+	ConVar hostnameConVar = FindConVar("hostname");
+	if (hostnameConVar != null) {
+		hostnameConVar.GetString(buffer, maxlen);
+		if (strlen(buffer) > 0) {
+			return;
+		}
+	}
+
+	strcopy(buffer, maxlen, "Server");
 }
 
 bool IsValidClient(int client) {
