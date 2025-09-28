@@ -54,12 +54,10 @@ body:
       label: Game/Engine
       description: Which Source Engine game are you running?
       options:
-        - Counter-Strike 2
         - "Counter-Strike: Global Offensive"
         - "Counter-Strike: Source"
         - Team Fortress 2
         - Left 4 Dead 2
-        - Garry's Mod
         - Insurgency
         - "Day of Defeat: Source"
         - "Half-Life 2: Deathmatch"
