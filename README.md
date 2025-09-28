@@ -134,7 +134,7 @@ Control Steam ID format in both Discord messages and connection logs:
 
 - **SteamID Format** (`sc_show_steam_id 2`):
 
-<img src="https://media.discordapp.net/attachments/1116230546603917383/1421966405150052382/image.png?ex=68daf4e9&is=68d9a369&hm=0bd484176a1e3cb01f1d78bb9635da4bcbabfd933486165ddaf6133d55238683&=&format=webp" style="margin-top: -10px; margin-bottom: -10px;"></img>
+<img src="https://github.com/user-attachments/assets/454afb93-a8d4-4c34-a4d0-d64f7de4aac1" style="margin-top: -10px; margin-bottom: -10px;"></img>
 
 > ⚠️**Note**: Steam IDs will appear in chat messages _and_ connection messages when enabled.
 
@@ -147,11 +147,11 @@ Control what information appears in connect/disconnect messages:
 
 - **Basic Logging** (`sc_log_connections 1`):
 
-<img src="https://media.discordapp.net/attachments/1116230546603917383/1421965879570333819/image.png?ex=68daf46c&is=68d9a2ec&hm=dfac50dbbbbab899ed7b4d12d6d6d9e0b049f71caad305c79bc086c223151ecc&=&format=webp" style="margin-top: -10px; margin-bottom: -10px;"></img>
+<img src="https://github.com/user-attachments/assets/2d4b4e55-b8b6-41f6-b764-0d9402bda87e" style="margin-top: -10px; margin-bottom: -10px;"></img>
 
 - **IP Logging** (`sc_log_connections 2`):
 
-<img src="https://cdn.discordapp.com/attachments/1116230546603917383/1421965884171489341/image.png?ex=68daf46d&is=68d9a2ed&hm=487e032e5c3d9baa8e06f85142c2d9ba4504c47fa96cd9a98b9b677e32a15db4" style="margin-top: -10px; margin-bottom: -10px;"></img>
+<img src="https://github.com/user-attachments/assets/4fa6c66b-5dff-4e9b-a2db-86f7d5c8e5bb" style="margin-top: -10px; margin-bottom: -10px;"></img>
 
 ### Discord Prefix
 
