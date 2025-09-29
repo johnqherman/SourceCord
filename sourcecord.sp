@@ -109,6 +109,12 @@ public void OnPluginStart() {
 	g_iFailedRequests = 0;
 	g_fNextRetryTime = 0.0;
 
+	// init connection states
+	for (int i = 1; i <= MaxClients; i++) {
+		g_bClientConnected[i] = false;
+		g_bClientTeamChat[i] = false;
+	}
+
 	HookEvent("player_say", Event_PlayerSay);
 	HookEvent("player_activate", Event_PlayerConnect);
 	HookEvent("player_disconnect", Event_PlayerDisconnect);
@@ -505,6 +511,12 @@ public Action Event_PlayerConnect(Event event, const char[] name, bool dontBroad
 		return Plugin_Continue;
 	}
 
+	if (g_bClientConnected[client]) {
+		return Plugin_Continue;
+	}
+
+	g_bClientConnected[client] = true;
+
 	char playerName[64], escapedPlayerName[128], steamId[32], msg[256];
 	GetClientName(client, playerName, sizeof playerName);
 	EscapeUserContent(playerName, escapedPlayerName, sizeof escapedPlayerName);
@@ -533,10 +545,6 @@ public Action Event_PlayerConnect(Event event, const char[] name, bool dontBroad
 		Format(msg, sizeof msg, "**%s** %s connected to the server", escapedPlayerName, steamId);
 	} else {
 		Format(msg, sizeof msg, "**%s** connected to the server", escapedPlayerName);
-	}
-
-	if (client > 0 && client <= MAXPLAYERS) {
-		g_bClientConnected[client] = true;
 	}
 
 	char serverName[64];
