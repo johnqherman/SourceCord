@@ -5,7 +5,7 @@
 #include <sdktools>
 #include <ripext>
 
-#define PLUGIN_VERSION "1.0.6"
+#define PLUGIN_VERSION "1.0.7"
 
 #define AVATAR_CACHE_TTL 1800.0 // 30 minutes
 #define DISCORD_NICK_TTL 1800.0 // 30 minutes
@@ -1345,18 +1345,18 @@ void SendToDiscord(int client, const char[] message, bool isTeamChat = false) {
 	char webhookUsername[224];
 	if (g_iShowSteamId > 0) {
 		if (isTeamChat) {
-			Format(webhookUsername, sizeof webhookUsername, "(TEAM) %s %s", escapedPlayerName, steamId);
+			Format(webhookUsername, sizeof webhookUsername, "(TEAM) %s %s", playerName, steamId);
 		}
 		else {
-			Format(webhookUsername, sizeof webhookUsername, "%s %s", escapedPlayerName, steamId);
+			Format(webhookUsername, sizeof webhookUsername, "%s %s", playerName, steamId);
 		}
 	}
 	else {
 		if (isTeamChat) {
-			Format(webhookUsername, sizeof webhookUsername, "(TEAM) %s", escapedPlayerName);
+			Format(webhookUsername, sizeof webhookUsername, "(TEAM) %s", playerName);
 		}
 		else {
-			Format(webhookUsername, sizeof webhookUsername, "%s", escapedPlayerName);
+			Format(webhookUsername, sizeof webhookUsername, "%s", playerName);
 		}
 	}
 
