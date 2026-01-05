@@ -68,38 +68,6 @@ body:
       required: true
 
   - type: textarea
-    id: alternatives
-    attributes:
-      label: Alternative Solutions
-      description: Describe any alternative solutions or features you've considered
-      placeholder: What other approaches have you considered?
-    validations:
-      required: false
-
-  - type: textarea
-    id: examples
-    attributes:
-      label: Examples or References
-      description: Are there any examples of this feature in other plugins, games, or applications?
-      placeholder: |
-        Links to examples, screenshots, or references that demonstrate the feature...
-    validations:
-      required: false
-
-  - type: checkboxes
-    id: implementation
-    attributes:
-      label: Implementation Considerations
-      description: Please consider the following (check all that apply)
-      options:
-        - label: This feature would require Discord API changes
-        - label: This feature would require Steam API changes
-        - label: This feature might affect server performance
-        - label: This feature would require new configuration options
-        - label: This feature might have compatibility issues with certain games
-        - label: I would be willing to help test this feature
-
-  - type: textarea
     id: technical-details
     attributes:
       label: Technical Details (Optional)

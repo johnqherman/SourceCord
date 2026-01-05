@@ -47,6 +47,7 @@ jobs:
       - name: Compile plugin
         run: |
           cp sourcecord.sp addons/sourcemod/scripting/
+          cp -r sourcecord/ addons/sourcemod/scripting/
 
           cd addons/sourcemod/scripting
           ./spcomp -iinclude sourcecord.sp

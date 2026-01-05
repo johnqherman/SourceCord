@@ -12,7 +12,7 @@ body:
     id: description
     attributes:
       label: Bug Description
-      description: A clear and concise description of what the bug is
+      description: A clear and concise description of the bug
       placeholder: Describe what happened...
     validations:
       required: true
@@ -23,9 +23,9 @@ body:
       label: Steps to Reproduce
       description: Steps to reproduce the behavior
       placeholder: |
-        1. Go to '...'
-        2. Click on '....'
-        3. Scroll down to '....'
+        1. Configure setting '...'
+        2. Send message/join server/etc.
+        3. Check Discord/game server
         4. See error
     validations:
       required: true
@@ -70,7 +70,7 @@ body:
     attributes:
       label: Other Game/Mod Name
       description: Specify game or mod name if 'Other' was selected
-      placeholder: "e.g., TF2Classic, Open Fortress, Sven Co-op, etc."
+      placeholder: "e.g., TF2Classified, Open Fortress, Sven Co-op, etc."
     validations:
       required: false
 
@@ -79,7 +79,7 @@ body:
     attributes:
       label: SourceMod Version
       description: What version of SourceMod are you using?
-      placeholder: "e.g., 1.11.0.6767"
+      placeholder: "e.g., 1.12.0"
     validations:
       required: true
 
@@ -88,7 +88,7 @@ body:
     attributes:
       label: RipExt Version
       description: What version of RipExt extension are you using?
-      placeholder: "e.g., 1.4.0"
+      placeholder: "e.g., 1.3.2"
     validations:
       required: true
 
@@ -97,7 +97,7 @@ body:
     attributes:
       label: SourceCord Version
       description: What version of SourceCord are you using?
-      placeholder: "e.g., v1.0.0 or commit hash"
+      placeholder: "e.g., v1.1.0"
     validations:
       required: true
 
@@ -105,17 +105,13 @@ body:
     id: config
     attributes:
       label: Configuration
-      description: Your SourceCord configuration (please remove sensitive tokens/keys)
+      description: Your SourceCord configuration
       placeholder: |
-        sc_bot_token "REDACTED"
-        sc_channel_id "123456789012345678"
-        sc_guild_id "123456789012345678"
-        sc_webhook_url "REDACTED"
-        sc_steam_key "REDACTED"
         sc_interval "1.0"
         sc_log_connections "0"
         sc_use_role_colors "0"
         sc_use_nicknames "1"
+        etc.
       render: cfg
     validations:
       required: true
