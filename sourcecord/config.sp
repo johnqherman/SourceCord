@@ -1,5 +1,4 @@
 void InitializeConfig() {
-	// create convars
 	g_cvUpdateInterval = CreateConVar("sc_interval", "1.0", "Discord check interval (seconds)", FCVAR_NOTIFY, true, 1.0, true, 10.0);
 	g_cvLogConnections = CreateConVar("sc_log_connections", "1", "Log player connect/disconnects (off, basic, with IP)", FCVAR_NOTIFY, true, 0.0, true, 2.0);
 	g_cvUseRoleColors = CreateConVar("sc_use_role_colors", "1", "Use Discord role colors for usernames", FCVAR_NOTIFY, true, 0.0, true, 1.0);
@@ -56,7 +55,7 @@ void LoadCredentials() {
 		LogError("Failed to load credentials config: %s", configPath);
 		LogMessage("Operational settings (cvars) are located in cfg\\sourcemod\\sourcecord.cfg");
 
-		CreateExampleConfig(configPath);
+		CreateExampleCredentials(configPath);
 
 		delete kv;
 		return;
@@ -89,7 +88,7 @@ void LoadCredentials() {
 }
 
 
-void CreateExampleConfig(const char[] configPath) {
+void CreateExampleCredentials(const char[] configPath) {
 	File file = OpenFile(configPath, "w");
 	if (file == null) {
 		LogError("Failed to create example credentials config at %s", configPath);

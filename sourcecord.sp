@@ -5,7 +5,7 @@
 #include <sdktools>
 #include <ripext>
 
-#define PLUGIN_VERSION "1.1.0"
+#define PLUGIN_VERSION "1.1.0+build.1"
 
 #include "sourcecord/globals.sp"
 #include "sourcecord/config.sp"

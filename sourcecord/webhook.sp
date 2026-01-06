@@ -4,6 +4,7 @@ void SendToDiscord(int client, const char[] message, bool isTeamChat = false) {
 	}
 
 	char playerName[64], steamId[32], webhookUsername[224];
+
 	GetClientName(client, playerName, sizeof playerName);
 	GetFormattedSteamId(client, steamId, sizeof steamId);
 	FormatWebhookUsername(playerName, steamId, isTeamChat, webhookUsername, sizeof webhookUsername);
@@ -43,6 +44,7 @@ public void OnSteamResponse(HTTPResponse response, DataPack pack) {
 	pack.Reset();
 
 	char steamId64[32], webhookUsername[96], message[512], avatarUrl[256] = "";
+
 	pack.ReadString(steamId64, sizeof steamId64);
 	pack.ReadString(webhookUsername, sizeof webhookUsername);
 	pack.ReadString(message, sizeof message);

@@ -4,6 +4,7 @@ char g_sLastMessageId[32];
 Handle g_hDiscordTimer;
 
 
+
 void StartTimer() {
 	if (g_hDiscordTimer != null) {
 		KillTimer(g_hDiscordTimer);
@@ -106,6 +107,7 @@ public void OnDiscordResponse(HTTPResponse response, any data) {
 		}
 
 		char username[64], content[512], userId[32];
+
 		author.GetString("username", username, sizeof username);
 		author.GetString("id", userId, sizeof userId);
 		message.GetString("content", content, sizeof content);

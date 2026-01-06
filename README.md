@@ -60,7 +60,9 @@ Players can talk with Discord users directly from in-game, while Discord message
 
 ### 1. Settings
 
-On first load, the plugin creates `cfg/sourcemod/sourcecord.cfg` with operational settings:
+On first load, the plugin creates `cfg/sourcemod/sourcecord.cfg` with operational settings.
+
+Edit the file to set your preferred settings:
 
 ```cfg
 sc_interval "1.0"              // Check Discord messages every x second(s)
@@ -69,14 +71,14 @@ sc_use_role_colors "1"         // Show Discord role colors in-game? (enabled by 
 sc_use_nicknames "1"           // Use Discord server nicknames? (enabled by default)
 sc_show_steam_id "1"           // Show Steam ID format (0 = off, 1 = steamID3, 2 = steamID)
 sc_show_discord_prefix "1"     // Show [Discord] prefix in chat messages? (enabled by default)
-sc_discord_color "5865F2"      // Hex color code for Discord usernames in game chat (blurple by default)
+sc_discord_color "5865F2"      // Hex color for Discord usernames in game chat (blurple by default)
 ```
 
 ### 2. Credentials Setup
 
 The plugin will also create `addons/sourcemod/configs/sourcecord.cfg` if it doesn't exist.
 
-**Edit the config file** with your sensitive credentials:
+Edit this file to add your sensitive credentials:
 
 ```cfg
 "SourceCord"
@@ -109,7 +111,7 @@ You'll set up both in the steps below.
 
 #### Step 1: Create Bot and Get Token
 
-1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
+1. Go to the [Discord Developer Portal](https://discord.com/developers/applications)
 2. Create a new application and bot
 3. Copy the bot token and add it to your `configs/sourcecord.cfg` file as `bot_token`
 
@@ -135,7 +137,7 @@ You'll set up both in the steps below.
 
 **Bot Invitation URL**:
 
-Use this URL to invite your bot with the required permissions (replace `<YOUR_BOT_CLIENT_ID>`):
+Use this URL to invite your bot to your server with the required permissions (replace `<YOUR_BOT_CLIENT_ID>`):
 
 ```
 https://discord.com/api/oauth2/authorize?client_id=<YOUR_BOT_CLIENT_ID>&permissions=66560&scope=bot
@@ -145,20 +147,20 @@ https://discord.com/api/oauth2/authorize?client_id=<YOUR_BOT_CLIENT_ID>&permissi
 
 ### Webhook Setup
 
-1. In your Discord channel, go to Settings → Integrations → Webhooks
-2. Create a new webhook
-3. Copy the webhook URL and add it to your `configs/sourcecord.cfg` file as `webhook_url`
+1. In your Discord channel, go to Edit Channel → Integrations → Webhooks
+2. Create a new webhook (+ optionally set a default avatar)
+3. Copy the webhook URL and add it to `configs/sourcecord.cfg` as `webhook_url`
 
 ### Getting Discord IDs
 
-- **Channel ID**: Right-click the channel → **Copy ID** (add as `channel_id` in config)
-- **Guild ID**: Right-click the server name → **Copy ID** (add as `guild_id` in config)
+- **Channel ID**: Right-click channel → **Copy Channel ID** (add to `configs/sourcecord.cfg` as `channel_id`)
+- **Guild ID**: Right-click server name → **Copy Server ID** (add to `configs/sourcecord.cfg` as `guild_id`)
 - Enable **Developer Mode** in Discord settings to access these options
 
 ## Steam API Key
 
 1. Generate a Steam API key from the [Steam Web API](https://steamcommunity.com/dev/apikey)
-2. Add it to `configs/sourcecord.cfg` file as `api_key`
+2. Add it to `configs/sourcecord.cfg` as `api_key`
 
 ## Customization Options
 

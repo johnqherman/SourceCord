@@ -46,13 +46,11 @@ void FormatConnectionMessage(const char[] playerName, const char[] steamId, cons
 
 
 void InitializeChatIntegration() {
-	// init connection states
 	for (int i = 1; i <= MaxClients; i++) {
 		g_bClientConnected[i] = false;
 		g_bClientTeamChat[i] = false;
 	}
 
-	// hook player events
 	HookEvent("player_say", Event_PlayerSay);
 	HookEvent("player_activate", Event_PlayerConnect);
 	HookEvent("player_disconnect", Event_PlayerDisconnect);
@@ -117,6 +115,7 @@ public Action Event_PlayerConnect(Event event, const char[] name, bool dontBroad
 	g_bClientConnected[client] = true;
 
 	char playerName[64], escapedPlayerName[128], steamId[32], clientIP[32], msg[256];
+
 	GetClientName(client, playerName, sizeof playerName);
 	EscapeUserContent(playerName, escapedPlayerName, sizeof escapedPlayerName);
 	GetFormattedSteamId(client, steamId, sizeof steamId);

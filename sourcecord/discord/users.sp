@@ -53,6 +53,7 @@ public void OnDiscordUserResponse(HTTPResponse response, DataPack pack) {
 	pack.Reset();
 
 	char mentionUserId[32], originalUserId[32], username[64], content[512];
+
 	pack.ReadString(mentionUserId, sizeof mentionUserId);
 	pack.ReadString(originalUserId, sizeof originalUserId);
 	pack.ReadString(username, sizeof username);
@@ -102,6 +103,7 @@ public void OnDiscordUserNicknameResponse(HTTPResponse response, DataPack pack) 
 	pack.Reset();
 
 	char userId[32], username[64], content[512];
+
 	pack.ReadString(userId, sizeof userId);
 	pack.ReadString(username, sizeof username);
 	pack.ReadString(content, sizeof content);
@@ -154,6 +156,7 @@ public void OnDiscordChannelResponse(HTTPResponse response, DataPack pack) {
 	pack.Reset();
 
 	char channelId[32], originalUserId[32], username[64], content[512];
+
 	pack.ReadString(channelId, sizeof channelId);
 	pack.ReadString(originalUserId, sizeof originalUserId);
 	pack.ReadString(username, sizeof username);
@@ -199,6 +202,7 @@ public void OnDiscordRoleNameResponse(HTTPResponse response, DataPack pack) {
 	pack.Reset();
 
 	char roleId[32], originalUserId[32], username[64], content[512];
+
 	pack.ReadString(roleId, sizeof roleId);
 	pack.ReadString(originalUserId, sizeof originalUserId);
 	pack.ReadString(username, sizeof username);
@@ -282,6 +286,7 @@ public void OnDiscordMemberResponse(HTTPResponse response, DataPack pack) {
 	pack.Reset();
 
 	char userId[32], username[64], content[512];
+
 	pack.ReadString(userId, sizeof userId);
 	pack.ReadString(username, sizeof username);
 	pack.ReadString(content, sizeof content);
@@ -355,7 +360,9 @@ public void OnDiscordRolesResponse(HTTPResponse response, DataPack pack) {
 	pack.Reset();
 
 	JSONArray userRoleIds = view_as<JSONArray>(pack.ReadCell());
+
 	char userId[32], username[64], content[512];
+
 	pack.ReadString(userId, sizeof userId);
 	pack.ReadString(username, sizeof username);
 	pack.ReadString(content, sizeof content);
