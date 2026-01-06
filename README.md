@@ -37,7 +37,9 @@ Players can talk with Discord users directly from in-game, while Discord message
 | Day of Defeat: Source            | ❌ Unsupported  | Incompatible with SourceMod 1.12+         |
 | Garry's Mod                      | ❌ Incompatible | Not officially supported                  |
 
-> SourceCord should work with any Source Engine game that supports SourceMod 1.12+. If you encounter issues, please file a [bug report](https://github.com/johnqherman/SourceCord/issues/new?template=bug_report.yml).
+> SourceCord should work with any Source Engine game that supports SourceMod 1.12+.
+> <br>
+> If you encounter issues, please file a [bug report](https://github.com/johnqherman/SourceCord/issues/new?template=bug_report.yml).
 
 ## Requirements
 
@@ -62,7 +64,7 @@ Players can talk with Discord users directly from in-game, while Discord message
 
 On first load, the plugin creates `cfg/sourcemod/sourcecord.cfg` with operational settings.
 
-Edit the file to set your preferred settings:
+**Edit this file** to set your preferred settings:
 
 ```cfg
 sc_interval "1.0"              // Check Discord messages every x second(s)
@@ -74,11 +76,9 @@ sc_show_discord_prefix "1"     // Show [Discord] prefix in chat messages? (enabl
 sc_discord_color "5865F2"      // Hex color for Discord usernames in game chat (blurple by default)
 ```
 
-### 2. Credentials Setup
+### 2. Credentials File
 
-The plugin will also create `addons/sourcemod/configs/sourcecord.cfg` if it doesn't exist.
-
-Edit this file to add your sensitive credentials:
+The plugin will also generate `addons/sourcemod/configs/sourcecord.cfg` to store your credentials.
 
 ```cfg
 "SourceCord"
@@ -112,7 +112,7 @@ You'll set up both in the steps below.
 #### Step 1: Create Bot and Get Token
 
 1. Go to the [Discord Developer Portal](https://discord.com/developers/applications)
-2. Create a new application and bot
+2. Create a new application and bot user
 3. Copy the bot token and add it to your `configs/sourcecord.cfg` file as `bot_token`
 
 #### Step 2: Enable Required Bot Intents
@@ -124,9 +124,9 @@ You'll set up both in the steps below.
 - **Server Members Intent**: Required for fetching member nicknames and role information.
 - **Message Content Intent**: Required to read the actual content of Discord messages.
 
-  <img width="614" height="186" src="https://github.com/user-attachments/assets/08214ddf-2cbf-4451-bf0e-88010f3f02a6" />
-
 4. Save changes
+
+  <img width="614" height="186" src="https://github.com/user-attachments/assets/08214ddf-2cbf-4451-bf0e-88010f3f02a6" />
 
 #### Step 3: Invite Bot to Your Server
 
@@ -147,7 +147,7 @@ https://discord.com/api/oauth2/authorize?client_id=<YOUR_BOT_CLIENT_ID>&permissi
 
 ### Webhook Setup
 
-1. In your Discord channel, go to Edit Channel → Integrations → Webhooks
+1. In your Discord channel, go to **Edit Channel → Integrations → Webhooks**
 2. Create a new webhook (+ optionally set a default avatar)
 3. Copy the webhook URL and add it to `configs/sourcecord.cfg` as `webhook_url`
 
@@ -163,6 +163,8 @@ https://discord.com/api/oauth2/authorize?client_id=<YOUR_BOT_CLIENT_ID>&permissi
 2. Add it to `configs/sourcecord.cfg` as `api_key`
 
 ## Customization Options
+
+Edit these settings in `cfg/sourcemod/sourcecord.cfg` to customize SourceCord to your liking.
 
 ### Steam ID Display
 
@@ -187,7 +189,7 @@ Control Steam ID format in both Discord messages and connection logs:
 Control what information appears in connect/disconnect messages:
 
 - **Disabled** (`sc_log_connections 0`):
-  - No connection messages sent to Discord
+  - No connect/disconnect messages sent to Discord
 
 - **Basic Logging** (`sc_log_connections 1`):
 
