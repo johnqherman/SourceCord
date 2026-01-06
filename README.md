@@ -62,9 +62,9 @@ Players can talk with Discord users directly from in-game, while Discord message
 
 ### 1. Settings
 
-On first load, the plugin creates `cfg/sourcemod/sourcecord.cfg` with operational settings.
+On first load, the plugin generates `cfg/sourcemod/sourcecord.cfg` with default settings.
 
-**Edit this file** to set your preferred settings:
+**Edit this file** with your preferred settings:
 
 ```cfg
 sc_interval "1.0"              // Check Discord messages every x second(s)
@@ -100,22 +100,13 @@ The plugin will also generate `addons/sourcemod/configs/sourcecord.cfg` to store
 
 ## Discord Setup
 
-SourceCord requires **both** a bot token and a webhook URL.
-
-- **Bot Token**: Lets the plugin read messages and fetch user/role/channel data
-- **Webhook URL**: Sends game events and messages to Discord with custom names/avatars
-
-You'll set up both in the steps below.
-
-### Bot Setup
-
-#### Step 1: Create Bot and Get Token
+### Step 1: Create Bot and Get Token
 
 1. Go to the [Discord Developer Portal](https://discord.com/developers/applications)
 2. Create a new application and bot user
 3. Copy the bot token and add it to your `configs/sourcecord.cfg` file as `bot_token`
 
-#### Step 2: Enable Required Bot Intents
+### Step 2: Enable Required Bot Intents
 
 1. In the Discord Developer Portal, go to your bot's **Bot** settings page
 2. Scroll down to **Privileged Gateway Intents**
@@ -124,18 +115,18 @@ You'll set up both in the steps below.
 - **Server Members Intent**: Required for fetching member nicknames and role information.
 - **Message Content Intent**: Required to read the actual content of Discord messages.
 
-4. Save changes
+4. Save changes.
 
   <img width="614" height="186" src="https://github.com/user-attachments/assets/08214ddf-2cbf-4451-bf0e-88010f3f02a6" />
 
-#### Step 3: Invite Bot to Your Server
+### Step 3: Invite Bot to Your Server
 
-**Required Permissions**:
+#### Required Permissions:
 
 - **View Channels**: Needed to see the configured channel and resolve mentions
 - **Read Message History**: Needed to fetch/catch up on messages
 
-**Bot Invitation URL**:
+#### Bot Invitation URL:
 
 Use this URL to invite your bot to your server with the required permissions (replace `<YOUR_BOT_CLIENT_ID>`):
 
@@ -145,17 +136,17 @@ https://discord.com/api/oauth2/authorize?client_id=<YOUR_BOT_CLIENT_ID>&permissi
 
 > ⚠️ This only sets permissions - you also need to enable the required intents in Step 2.
 
-### Webhook Setup
+### Step 4: Set up Webhook
 
 1. In your Discord channel, go to **Edit Channel → Integrations → Webhooks**
-2. Create a new webhook (+ optionally set a default avatar)
+2. Create a new webhook (optionally set a default avatar)
 3. Copy the webhook URL and add it to `configs/sourcecord.cfg` as `webhook_url`
 
-### Getting Discord IDs
+### Step 5: Get Discord IDs
 
+- **Developer Mode**: User Settings → Advanced → Developer Mode → **Enable**
 - **Channel ID**: Right-click channel → **Copy Channel ID** (add to `configs/sourcecord.cfg` as `channel_id`)
 - **Guild ID**: Right-click server name → **Copy Server ID** (add to `configs/sourcecord.cfg` as `guild_id`)
-- Enable **Developer Mode** in Discord settings to access these options
 
 ## Steam API Key
 
@@ -184,7 +175,7 @@ Control Steam ID format in both Discord messages and connection logs:
 
 > ⚠️**Note**: Steam IDs will appear in chat messages _and_ connection messages when enabled.
 
-### Connection Logging Options
+### Connection Logging
 
 Control what information appears in connect/disconnect messages:
 
