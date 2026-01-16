@@ -12,6 +12,7 @@
 // convars
 ConVar g_cvUpdateInterval,
        g_cvLogConnections,
+       g_cvLogMapChanges,
        g_cvUseRoleColors,
        g_cvUseNicknames,
        g_cvShowSteamId,
@@ -21,6 +22,7 @@ ConVar g_cvUpdateInterval,
 // settings
 float g_fUpdateInterval;
 int g_iLogConnections;
+bool g_bLogMapChanges;
 bool g_bUseRoleColors;
 bool g_bUseNicknames;
 int g_iShowSteamId;

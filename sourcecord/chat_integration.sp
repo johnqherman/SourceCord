@@ -1,5 +1,6 @@
 // connection state tracking
 bool g_bClientConnected[MAXPLAYERS + 1];
+int g_iHumanPlayerCount;
 
 // team chat tracking
 bool g_bClientTeamChat[MAXPLAYERS + 1];
@@ -46,6 +47,7 @@ void FormatConnectionMessage(const char[] playerName, const char[] steamId, cons
 
 
 void InitializeChatIntegration() {
+	g_iHumanPlayerCount = 0;
 	for (int i = 1; i <= MaxClients; i++) {
 		g_bClientConnected[i] = false;
 		g_bClientTeamChat[i] = false;
@@ -54,6 +56,26 @@ void InitializeChatIntegration() {
 	HookEvent("player_say", Event_PlayerSay);
 	HookEvent("player_activate", Event_PlayerConnect);
 	HookEvent("player_disconnect", Event_PlayerDisconnect);
+}
+
+
+void LogMapChange() {
+	if (!g_bLogMapChanges) {
+		return;
+	}
+
+	if (g_iHumanPlayerCount == 0) {
+		return;
+	}
+
+	char mapName[64], msg[256];
+	GetCurrentMap(mapName, sizeof mapName);
+
+	Format(msg, sizeof msg, "Map changed to **%s**", mapName);
+
+	char serverName[64];
+	GetServerName(serverName, sizeof serverName);
+	SendWebhook(serverName, msg, "", false);
 }
 
 
@@ -94,10 +116,6 @@ public Action Event_PlayerSay(Event event, const char[] name, bool dontBroadcast
 
 
 public Action Event_PlayerConnect(Event event, const char[] name, bool dontBroadcast) {
-	if (g_iLogConnections == 0) {
-		return Plugin_Continue;
-	}
-
 	int client = GetClientOfUserId(event.GetInt("userid"));
 
 	if (client <= 0 || client > MaxClients || !IsClientConnected(client)) {
@@ -113,6 +131,11 @@ public Action Event_PlayerConnect(Event event, const char[] name, bool dontBroad
 	}
 
 	g_bClientConnected[client] = true;
+	g_iHumanPlayerCount++;
+
+	if (g_iLogConnections == 0) {
+		return Plugin_Continue;
+	}
 
 	char playerName[64], escapedPlayerName[128], steamId[32], clientIP[32], msg[256];
 
@@ -144,10 +167,6 @@ public Action Event_PlayerDisconnect(Event event, const char[] name, bool dontBr
 		g_bClientTeamChat[client] = false;
 	}
 
-	if (g_iLogConnections == 0) {
-		return Plugin_Continue;
-	}
-
 	if (client > 0 && IsFakeClient(client)) {
 		return Plugin_Continue;
 	}
@@ -157,6 +176,11 @@ public Action Event_PlayerDisconnect(Event event, const char[] name, bool dontBr
 	}
 
 	g_bClientConnected[client] = false;
+	g_iHumanPlayerCount--;
+
+	if (g_iLogConnections == 0) {
+		return Plugin_Continue;
+	}
 
 	char playerName[64],
 	     escapedPlayerName[128],

@@ -1,6 +1,7 @@
 void InitializeConfig() {
 	g_cvUpdateInterval = CreateConVar("sc_interval", "1.0", "Discord check interval (seconds)", FCVAR_NOTIFY, true, 1.0, true, 10.0);
 	g_cvLogConnections = CreateConVar("sc_log_connections", "1", "Log player connect/disconnects (off, basic, with IP)", FCVAR_NOTIFY, true, 0.0, true, 2.0);
+	g_cvLogMapChanges = CreateConVar("sc_log_map_changes", "0", "Log map changes to Discord when players are connected", FCVAR_NOTIFY, true, 0.0, true, 1.0);
 	g_cvUseRoleColors = CreateConVar("sc_use_role_colors", "1", "Use Discord role colors for usernames", FCVAR_NOTIFY, true, 0.0, true, 1.0);
 	g_cvUseNicknames = CreateConVar("sc_use_nicknames", "1", "Use Discord server nicknames instead of global usernames", FCVAR_NOTIFY, true, 0.0, true, 1.0);
 	g_cvShowSteamId = CreateConVar("sc_show_steam_id", "1", "Show Steam ID in Discord messages (off, steamID3, steamID)", FCVAR_NOTIFY, true, 0.0, true, 2.0);
@@ -10,6 +11,7 @@ void InitializeConfig() {
 	// hook convar changes
 	g_cvUpdateInterval.AddChangeHook(OnConVarChanged);
 	g_cvLogConnections.AddChangeHook(OnConVarChanged);
+	g_cvLogMapChanges.AddChangeHook(OnConVarChanged);
 	g_cvUseRoleColors.AddChangeHook(OnConVarChanged);
 	g_cvUseNicknames.AddChangeHook(OnConVarChanged);
 	g_cvShowSteamId.AddChangeHook(OnConVarChanged);
@@ -33,6 +35,7 @@ public void OnConVarChanged(ConVar convar, const char[] oldValue, const char[] n
 void CacheSettings() {
 	g_fUpdateInterval = g_cvUpdateInterval.FloatValue;
 	g_iLogConnections = g_cvLogConnections.IntValue;
+	g_bLogMapChanges = g_cvLogMapChanges.BoolValue;
 	g_bUseRoleColors = g_cvUseRoleColors.BoolValue;
 	g_bUseNicknames = g_cvUseNicknames.BoolValue;
 	g_iShowSteamId = g_cvShowSteamId.IntValue;

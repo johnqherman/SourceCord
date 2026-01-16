@@ -42,6 +42,11 @@ public void OnConfigsExecuted() {
 }
 
 
+public void OnMapStart() {
+	LogMapChange();
+}
+
+
 public void OnPluginEnd() {
 	CleanupCaches();
 }
