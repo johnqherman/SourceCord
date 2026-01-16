@@ -169,6 +169,136 @@ void ProcessCustomEmojis(char[] messageContent, int maxContentLength) {
 }
 
 
+void FetchGuildEmojis() {
+	if (strlen(g_sBotToken) == 0 || strlen(g_sGuildId) == 0) {
+		return;
+	}
+
+	float currentTime = GetGameTime();
+	if (g_bEmojiFetched && (currentTime - g_fEmojiLastFetch) < EMOJI_CACHE_TTL) {
+		return;
+	}
+
+	char emojiApiUrl[256];
+	Format(emojiApiUrl, sizeof emojiApiUrl, "%s/guilds/%s/emojis", DISCORD_API_BASE_URL, g_sGuildId);
+
+	HTTPRequest request = CreateDiscordAPIRequest(emojiApiUrl);
+	request.Get(OnGuildEmojisResponse);
+}
+
+
+public void OnGuildEmojisResponse(HTTPResponse response, any data) {
+	if (!IsValidDiscordResponse(response)) {
+		LogDiscordAPIError(response.Status, "emoji fetching");
+		return;
+	}
+
+	g_hGuildEmojiCache.Clear();
+
+	JSONArray emojis = view_as<JSONArray>(response.Data);
+	int emojiCount = emojis.Length;
+
+	for (int i = 0; i < emojiCount; i++) {
+		JSONObject emoji = view_as<JSONObject>(emojis.Get(i));
+		if (emoji == null) {
+			continue;
+		}
+
+		char emojiName[64], emojiId[32];
+		emoji.GetString("name", emojiName, sizeof emojiName);
+		emoji.GetString("id", emojiId, sizeof emojiId);
+
+		bool isAnimated = emoji.GetBool("animated");
+
+		char emojiData[64];
+		Format(emojiData, sizeof emojiData, "%s|%s", emojiId, isAnimated ? "1" : "0");
+
+		g_hGuildEmojiCache.SetString(emojiName, emojiData);
+
+		delete emoji;
+	}
+
+	g_bEmojiFetched = true;
+	g_fEmojiLastFetch = GetGameTime();
+}
+
+
+void ConvertTextEmojisToDiscord(char[] messageContent, int maxContentLength) {
+	if (!g_bEmojiFetched || g_hGuildEmojiCache.Size == 0) {
+		return;
+	}
+
+	int pos = 0;
+	int messageLen = strlen(messageContent);
+
+	while (pos < messageLen) {
+		if (messageContent[pos] != ':') {
+			pos++;
+			continue;
+		}
+
+		int colonEndPos = -1;
+		for (int i = pos + 1; i < messageLen && i < pos + 65; i++) {
+			if (messageContent[i] == ':') {
+				colonEndPos = i;
+				break;
+			}
+			if (messageContent[i] == ' ' || messageContent[i] == '\n' || messageContent[i] == '\t') {
+				break;
+			}
+		}
+
+		if (colonEndPos == -1 || colonEndPos == pos + 1) {
+			pos++;
+			continue;
+		}
+
+		int emojiNameLen = colonEndPos - pos - 1;
+		if (emojiNameLen <= 0 || emojiNameLen >= 64) {
+			pos++;
+			continue;
+		}
+
+		char emojiName[64], emojiNameUnescaped[64];
+		CopySubstring(messageContent, pos + 1, emojiNameLen, emojiName, sizeof emojiName);
+
+		strcopy(emojiNameUnescaped, sizeof emojiNameUnescaped, emojiName);
+		ReplaceString(emojiNameUnescaped, sizeof emojiNameUnescaped, "\\_", "_", true);
+
+		char emojiData[64];
+		if (!g_hGuildEmojiCache.GetString(emojiNameUnescaped, emojiData, sizeof emojiData)) {
+			pos++;
+			continue;
+		}
+
+		char dataParts[2][32];
+		if (ExplodeString(emojiData, "|", dataParts, sizeof dataParts, sizeof dataParts[]) != 2) {
+			pos++;
+			continue;
+		}
+
+		char emojiId[32];
+		strcopy(emojiId, sizeof emojiId, dataParts[0]);
+		bool isAnimated = StrEqual(dataParts[1], "1");
+
+		char textEmoji[128], discordEmoji[128];
+		Format(textEmoji, sizeof textEmoji, ":%s:", emojiName);
+
+		if (isAnimated) {
+			Format(discordEmoji, sizeof discordEmoji, "<a:%s:%s>", emojiNameUnescaped, emojiId);
+		}
+		else {
+			Format(discordEmoji, sizeof discordEmoji, "<:%s:%s>", emojiNameUnescaped, emojiId);
+		}
+
+		ReplaceString(messageContent, maxContentLength, textEmoji, discordEmoji, false);
+
+		messageLen = strlen(messageContent);
+		pos += strlen(discordEmoji);
+	}
+}
+
+
 void GetServerName(char[] buffer, int maxlen) {
 	ConVar hostnameConVar = FindConVar("hostname");
 	if (hostnameConVar != null) {

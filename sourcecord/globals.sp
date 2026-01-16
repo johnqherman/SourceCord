@@ -8,6 +8,7 @@
 #define DISCORD_NICK_TTL 1800.0 // 30 minutes
 #define DISCORD_COLOR_TTL 3600.0 // 1 hour
 #define DISCORD_LONG_TTL 86400.0 // 24 hours
+#define EMOJI_CACHE_TTL 3600.0 // 1 hour
 
 // convars
 ConVar g_cvUpdateInterval,
@@ -46,7 +47,12 @@ StringMap g_hUserColorCache,
           g_hUserNickCache,
           g_hUserAvatarCache,
           g_hChannelNameCache,
-          g_hRoleNameCache;
+          g_hRoleNameCache,
+          g_hGuildEmojiCache;
+
+// emoji state
+bool g_bEmojiFetched;
+float g_fEmojiLastFetch;
 
 // message queuing
 ArrayList g_hMessageQueue;
