@@ -379,3 +379,264 @@ bool IsValidHexColor(const char[] color) {
 
 	return true;
 }
+
+
+void FetchGuildMembers() {
+	if (!g_bAllowUserPings) {
+		return;
+	}
+
+	if (strlen(g_sBotToken) == 0 || strlen(g_sGuildId) == 0) {
+		return;
+	}
+
+	float currentTime = GetGameTime();
+	if (g_bMembersFetched && (currentTime - g_fMembersLastFetch) < MEMBER_CACHE_TTL) {
+		return;
+	}
+
+	char memberApiUrl[256];
+	Format(memberApiUrl, sizeof memberApiUrl, "%s/guilds/%s/members?limit=1000", DISCORD_API_BASE_URL, g_sGuildId);
+
+	HTTPRequest request = CreateDiscordAPIRequest(memberApiUrl);
+	request.Get(OnGuildMembersResponse);
+}
+
+
+public void OnGuildMembersResponse(HTTPResponse response, any data) {
+	if (!IsValidDiscordResponse(response)) {
+		LogDiscordAPIError(response.Status, "member fetching");
+		return;
+	}
+
+	g_hGuildMemberCache.Clear();
+
+	JSONArray members = view_as<JSONArray>(response.Data);
+	int memberCount = members.Length;
+
+	for (int i = 0; i < memberCount; i++) {
+		JSONObject member = view_as<JSONObject>(members.Get(i));
+		if (member == null) {
+			continue;
+		}
+
+		JSONObject user = view_as<JSONObject>(member.Get("user"));
+		if (user == null) {
+			delete member;
+			continue;
+		}
+
+		char username[64], usernameKey[64], userId[32];
+		user.GetString("username", username, sizeof username);
+		user.GetString("id", userId, sizeof userId);
+
+		strcopy(usernameKey, sizeof usernameKey, username);
+		for (int j = 0; j < strlen(usernameKey); j++) {
+			usernameKey[j] = CharToLower(usernameKey[j]);
+		}
+
+		g_hGuildMemberCache.SetString(usernameKey, userId);
+
+		delete user;
+		delete member;
+	}
+
+	g_bMembersFetched = true;
+	g_fMembersLastFetch = GetGameTime();
+}
+
+
+void FetchGuildRoles() {
+	if (!g_bAllowRolePings) {
+		return;
+	}
+
+	if (strlen(g_sBotToken) == 0 || strlen(g_sGuildId) == 0) {
+		return;
+	}
+
+	float currentTime = GetGameTime();
+	if (g_bRolesFetched && (currentTime - g_fRolesLastFetch) < ROLE_CACHE_TTL) {
+		return;
+	}
+
+	char roleApiUrl[256];
+	Format(roleApiUrl, sizeof roleApiUrl, "%s/guilds/%s/roles", DISCORD_API_BASE_URL, g_sGuildId);
+
+	HTTPRequest request = CreateDiscordAPIRequest(roleApiUrl);
+	request.Get(OnGuildRolesResponse);
+}
+
+
+public void OnGuildRolesResponse(HTTPResponse response, any data) {
+	if (!IsValidDiscordResponse(response)) {
+		LogDiscordAPIError(response.Status, "role fetching");
+		return;
+	}
+
+	g_hGuildRoleCache.Clear();
+
+	JSONArray roles = view_as<JSONArray>(response.Data);
+	int roleCount = roles.Length;
+
+	for (int i = 0; i < roleCount; i++) {
+		JSONObject role = view_as<JSONObject>(roles.Get(i));
+		if (role == null) {
+			continue;
+		}
+
+		char roleName[64], roleNameKey[64], roleId[32];
+		role.GetString("name", roleName, sizeof roleName);
+		role.GetString("id", roleId, sizeof roleId);
+
+		if (StrEqual(roleName, "@everyone")) {
+			delete role;
+			continue;
+		}
+
+		strcopy(roleNameKey, sizeof roleNameKey, roleName);
+		for (int j = 0; j < strlen(roleNameKey); j++) {
+			roleNameKey[j] = CharToLower(roleNameKey[j]);
+		}
+
+		g_hGuildRoleCache.SetString(roleNameKey, roleId);
+
+		delete role;
+	}
+
+	g_bRolesFetched = true;
+	g_fRolesLastFetch = GetGameTime();
+}
+
+
+void ConvertTextUserMentionsToDiscord(char[] messageContent, int maxContentLength) {
+	if (!g_bAllowUserPings || !g_bMembersFetched || g_hGuildMemberCache.Size == 0) {
+		return;
+	}
+
+	int pos = 0;
+	int messageLen = strlen(messageContent);
+
+	while (pos < messageLen) {
+		if (messageContent[pos] != '@') {
+			pos++;
+			continue;
+		}
+
+		if (pos + 8 <= messageLen && StrContains(messageContent[pos], "@everyone", false) == 0) {
+			pos += 9;
+			continue;
+		}
+		if (pos + 5 <= messageLen && StrContains(messageContent[pos], "@here", false) == 0) {
+			pos += 5;
+			continue;
+		}
+
+		int usernameEndPos = pos + 1;
+		while (usernameEndPos < messageLen && usernameEndPos < pos + 65) {
+			char c = messageContent[usernameEndPos];
+			if (c == ' ' || c == '\n' || c == '\t' || c == ',' || c == '.' || c == '!' || c == '?' || c == ':' || c == ';') {
+				break;
+			}
+			usernameEndPos++;
+		}
+
+		int usernameLen = usernameEndPos - pos - 1;
+		if (usernameLen <= 0 || usernameLen >= 64) {
+			pos++;
+			continue;
+		}
+
+		char username[64], usernameKey[64];
+		CopySubstring(messageContent, pos + 1, usernameLen, username, sizeof username);
+
+		strcopy(usernameKey, sizeof usernameKey, username);
+		for (int i = 0; i < strlen(usernameKey); i++) {
+			usernameKey[i] = CharToLower(usernameKey[i]);
+		}
+
+		char userId[32];
+		if (!g_hGuildMemberCache.GetString(usernameKey, userId, sizeof userId)) {
+			pos++;
+			continue;
+		}
+
+		char textMention[128], discordMention[128];
+		Format(textMention, sizeof textMention, "@%s", username);
+		Format(discordMention, sizeof discordMention, "<@%s>", userId);
+
+		ReplaceString(messageContent, maxContentLength, textMention, discordMention, false);
+
+		messageLen = strlen(messageContent);
+		pos += strlen(discordMention);
+	}
+}
+
+
+void ConvertTextRoleMentionsToDiscord(char[] messageContent, int maxContentLength) {
+	if (!g_bAllowRolePings || !g_bRolesFetched || g_hGuildRoleCache.Size == 0) {
+		return;
+	}
+
+	int pos = 0;
+	int messageLen = strlen(messageContent);
+
+	while (pos < messageLen) {
+		if (messageContent[pos] != '@') {
+			pos++;
+			continue;
+		}
+
+		if (pos + 8 <= messageLen && StrContains(messageContent[pos], "@everyone", false) == 0) {
+			pos += 9;
+			continue;
+		}
+		if (pos + 5 <= messageLen && StrContains(messageContent[pos], "@here", false) == 0) {
+			pos += 5;
+			continue;
+		}
+
+		if (pos > 0 && messageContent[pos - 1] == '<') {
+			pos++;
+			continue;
+		}
+
+		int roleNameEndPos = pos + 1;
+		while (roleNameEndPos < messageLen && roleNameEndPos < pos + 65) {
+			char c = messageContent[roleNameEndPos];
+			if (c == ' ' || c == '\n' || c == '\t' || c == ',' || c == '.' || c == '!' || c == '?' || c == ':' || c == ';') {
+				break;
+			}
+			roleNameEndPos++;
+		}
+
+		int roleNameLen = roleNameEndPos - pos - 1;
+		if (roleNameLen <= 0 || roleNameLen >= 64) {
+			pos++;
+			continue;
+		}
+
+		char roleName[64], roleNameKey[64];
+		CopySubstring(messageContent, pos + 1, roleNameLen, roleName, sizeof roleName);
+
+		strcopy(roleNameKey, sizeof roleNameKey, roleName);
+		for (int i = 0; i < strlen(roleNameKey); i++) {
+			roleNameKey[i] = CharToLower(roleNameKey[i]);
+		}
+
+		char roleId[32];
+		if (!g_hGuildRoleCache.GetString(roleNameKey, roleId, sizeof roleId)) {
+			pos++;
+			continue;
+		}
+
+		char textMention[128], discordMention[128];
+		Format(textMention, sizeof textMention, "@%s", roleName);
+		Format(discordMention, sizeof discordMention, "<@&%s>", roleId);
+
+		ReplaceString(messageContent, maxContentLength, textMention, discordMention, false);
+
+		messageLen = strlen(messageContent);
+		pos += strlen(discordMention);
+	}
+}

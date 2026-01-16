@@ -9,6 +9,8 @@
 #define DISCORD_COLOR_TTL 3600.0 // 1 hour
 #define DISCORD_LONG_TTL 86400.0 // 24 hours
 #define EMOJI_CACHE_TTL 3600.0 // 1 hour
+#define MEMBER_CACHE_TTL 3600.0 // 1 hour
+#define ROLE_CACHE_TTL 3600.0 // 1 hour
 
 // convars
 ConVar g_cvUpdateInterval,
@@ -18,7 +20,9 @@ ConVar g_cvUpdateInterval,
        g_cvUseNicknames,
        g_cvShowSteamId,
        g_cvShowDiscordPrefix,
-       g_cvDiscordColor;
+       g_cvDiscordColor,
+       g_cvAllowUserPings,
+       g_cvAllowRolePings;
 
 // settings
 float g_fUpdateInterval;
@@ -29,6 +33,8 @@ bool g_bUseNicknames;
 int g_iShowSteamId;
 bool g_bShowDiscordPrefix;
 char g_sDiscordColor[8];
+bool g_bAllowUserPings;
+bool g_bAllowRolePings;
 
 // credentials
 char g_sBotToken[128],
@@ -48,11 +54,19 @@ StringMap g_hUserColorCache,
           g_hUserAvatarCache,
           g_hChannelNameCache,
           g_hRoleNameCache,
-          g_hGuildEmojiCache;
+          g_hGuildEmojiCache,
+          g_hGuildMemberCache,
+          g_hGuildRoleCache;
 
 // emoji state
 bool g_bEmojiFetched;
 float g_fEmojiLastFetch;
+
+// member/role ping state
+bool g_bMembersFetched;
+float g_fMembersLastFetch;
+bool g_bRolesFetched;
+float g_fRolesLastFetch;
 
 // message queuing
 ArrayList g_hMessageQueue;

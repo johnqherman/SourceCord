@@ -4,6 +4,8 @@ void SendToDiscord(int client, const char[] message, bool isTeamChat = false) {
 	}
 
 	FetchGuildEmojis();
+	FetchGuildMembers();
+	FetchGuildRoles();
 
 	char playerName[64], steamId[32], webhookUsername[224];
 
@@ -91,6 +93,8 @@ void SendWebhook(const char[] username, const char[] content, const char[] avata
 	}
 
 	ConvertTextEmojisToDiscord(finalContent, sizeof finalContent);
+	ConvertTextUserMentionsToDiscord(finalContent, sizeof finalContent);
+	ConvertTextRoleMentionsToDiscord(finalContent, sizeof finalContent);
 
 	JSONObject payload = new JSONObject();
 	payload.SetString("username", username);

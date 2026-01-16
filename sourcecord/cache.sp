@@ -6,6 +6,8 @@ void InitializeCaches() {
 	g_hChannelNameCache = new StringMap();
 	g_hRoleNameCache = new StringMap();
 	g_hGuildEmojiCache = new StringMap();
+	g_hGuildMemberCache = new StringMap();
+	g_hGuildRoleCache = new StringMap();
 	g_hMessageQueue = new ArrayList(ByteCountToCells(512));
 	g_hProcessedMessages = new StringMap();
 	g_hMessageIdOrder = new ArrayList(ByteCountToCells(32));
@@ -13,6 +15,10 @@ void InitializeCaches() {
 	g_fNextRetryTime = 0.0;
 	g_bEmojiFetched = false;
 	g_fEmojiLastFetch = 0.0;
+	g_bMembersFetched = false;
+	g_fMembersLastFetch = 0.0;
+	g_bRolesFetched = false;
+	g_fRolesLastFetch = 0.0;
 }
 
 
@@ -79,6 +85,8 @@ void CleanupCaches() {
 	delete g_hChannelNameCache;
 	delete g_hRoleNameCache;
 	delete g_hGuildEmojiCache;
+	delete g_hGuildMemberCache;
+	delete g_hGuildRoleCache;
 	delete g_hMessageQueue;
 	delete g_hProcessedMessages;
 	delete g_hMessageIdOrder;

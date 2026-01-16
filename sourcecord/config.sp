@@ -7,6 +7,8 @@ void InitializeConfig() {
 	g_cvShowSteamId = CreateConVar("sc_show_steam_id", "1", "Show Steam ID in Discord messages (off, steamID3, steamID)", FCVAR_NOTIFY, true, 0.0, true, 2.0);
 	g_cvShowDiscordPrefix = CreateConVar("sc_show_discord_prefix", "1", "Show [Discord] prefix in chat messages", FCVAR_NOTIFY, true, 0.0, true, 1.0);
 	g_cvDiscordColor = CreateConVar("sc_discord_color", DISCORD_DEFAULT_COLOR, "Hex color code for Discord usernames (without # prefix)", FCVAR_NOTIFY);
+	g_cvAllowUserPings = CreateConVar("sc_allow_user_pings", "0", "Allow in-game users to ping Discord users via @username", FCVAR_NOTIFY, true, 0.0, true, 1.0);
+	g_cvAllowRolePings = CreateConVar("sc_allow_role_pings", "0", "Allow in-game users to ping Discord roles via @rolename", FCVAR_NOTIFY, true, 0.0, true, 1.0);
 
 	// hook convar changes
 	g_cvUpdateInterval.AddChangeHook(OnConVarChanged);
@@ -17,6 +19,8 @@ void InitializeConfig() {
 	g_cvShowSteamId.AddChangeHook(OnConVarChanged);
 	g_cvShowDiscordPrefix.AddChangeHook(OnConVarChanged);
 	g_cvDiscordColor.AddChangeHook(OnConVarChanged);
+	g_cvAllowUserPings.AddChangeHook(OnConVarChanged);
+	g_cvAllowRolePings.AddChangeHook(OnConVarChanged);
 
 	// auto-create and execute config file
 	AutoExecConfig(true, "sourcecord");
@@ -41,6 +45,8 @@ void CacheSettings() {
 	g_iShowSteamId = g_cvShowSteamId.IntValue;
 	g_bShowDiscordPrefix = g_cvShowDiscordPrefix.BoolValue;
 	g_cvDiscordColor.GetString(g_sDiscordColor, sizeof g_sDiscordColor);
+	g_bAllowUserPings = g_cvAllowUserPings.BoolValue;
+	g_bAllowRolePings = g_cvAllowRolePings.BoolValue;
 
 	if (!IsValidHexColor(g_sDiscordColor)) {
 		LogMessage("Invalid hex color format '%s'", g_sDiscordColor);
