@@ -1,4 +1,6 @@
 void InitializeConfig() {
+	g_cvConfigFile = CreateConVar("sc_config_file", "sourcecord", "Settings config file name in cfg/sourcemod/ (set in server.cfg)", FCVAR_NOTIFY);
+	g_cvCredentialsFile = CreateConVar("sc_credentials_file", "sourcecord", "Credentials config file name in sourcemod/configs/ (set in server.cfg)", FCVAR_NOTIFY);
 	g_cvUpdateInterval = CreateConVar("sc_interval", "1.0", "Discord check interval (seconds)", FCVAR_NOTIFY, true, 1.0, true, 10.0);
 	g_cvLogConnections = CreateConVar("sc_log_connections", "1", "Log player connect/disconnects (off, basic, with IP)", FCVAR_NOTIFY, true, 0.0, true, 2.0);
 	g_cvLogMapChanges = CreateConVar("sc_log_map_changes", "0", "Log map changes to Discord when players are connected", FCVAR_NOTIFY, true, 0.0, true, 1.0);
@@ -23,7 +25,31 @@ void InitializeConfig() {
 	g_cvAllowRolePings.AddChangeHook(OnConVarChanged);
 
 	// auto-create and execute config file
-	AutoExecConfig(true, "sourcecord");
+	char configFile[64];
+	g_cvConfigFile.GetString(configFile, sizeof configFile);
+	strcopy(g_sLoadedConfigFile, sizeof g_sLoadedConfigFile, configFile);
+	AutoExecConfig(true, configFile);
+}
+
+
+bool CheckConfigFileChange() {
+	char configFile[64];
+	g_cvConfigFile.GetString(configFile, sizeof configFile);
+
+	if (!StrEqual(configFile, g_sLoadedConfigFile)) {
+		char configPath[PLATFORM_MAX_PATH];
+		Format(configPath, sizeof configPath, "cfg/sourcemod/%s.cfg", configFile);
+
+		if (FileExists(configPath)) {
+			LogMessage("sc_config_file changed to '%s', executing config", configFile);
+			ServerCommand("exec sourcemod/%s.cfg", configFile);
+			strcopy(g_sLoadedConfigFile, sizeof g_sLoadedConfigFile, configFile);
+			return true;
+		} else {
+			LogError("Config file does not exist: %s (falling back to %s)", configPath, g_sLoadedConfigFile);
+		}
+	}
+	return false;
 }
 
 
@@ -56,15 +82,21 @@ void CacheSettings() {
 
 
 void LoadCredentials() {
+	char credentialsFile[64];
+	g_cvCredentialsFile.GetString(credentialsFile, sizeof credentialsFile);
+
 	char configPath[PLATFORM_MAX_PATH];
-	BuildPath(Path_SM, configPath, sizeof configPath, "configs/sourcecord.cfg");
+	BuildPath(Path_SM, configPath, sizeof configPath, "configs/%s.cfg", credentialsFile);
+
+	char settingsFile[64];
+	g_cvConfigFile.GetString(settingsFile, sizeof settingsFile);
 
 	KeyValues kv = new KeyValues("SourceCord");
 	if (!kv.ImportFromFile(configPath)) {
 		LogError("Failed to load credentials config: %s", configPath);
-		LogMessage("Operational settings (cvars) are located in cfg\\sourcemod\\sourcecord.cfg");
+		LogMessage("Operational settings (cvars) are located in cfg\\sourcemod\\%s.cfg", settingsFile);
 
-		CreateExampleCredentials(configPath);
+		CreateExampleCredentials(configPath, settingsFile);
 
 		delete kv;
 		return;
@@ -93,11 +125,11 @@ void LoadCredentials() {
 	}
 
 	LogMessage("Credentials loaded successfully from %s", configPath);
-	LogMessage("Operational settings (cvars) are located in cfg\\sourcemod\\sourcecord.cfg");
+	LogMessage("Operational settings (cvars) are located in cfg\\sourcemod\\%s.cfg", settingsFile);
 }
 
 
-void CreateExampleCredentials(const char[] configPath) {
+void CreateExampleCredentials(const char[] configPath, const char[] settingsFile) {
 	File file = OpenFile(configPath, "w");
 	if (file == null) {
 		LogError("Failed to create example credentials config at %s", configPath);
@@ -123,5 +155,5 @@ void CreateExampleCredentials(const char[] configPath) {
 	file.Close();
 	LogMessage("Created example credentials config at %s", configPath);
 	LogMessage("Edit this file with your bot token, webhook URL, and Steam API key, then restart the plugin.");
-	LogMessage("Operational settings (cvars) will auto-generate in cfg\\sourcemod\\sourcecord.cfg");
+	LogMessage("Operational settings (cvars) will auto-generate in cfg\\sourcemod\\%s.cfg", settingsFile);
 }

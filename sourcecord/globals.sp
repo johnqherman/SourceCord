@@ -9,7 +9,9 @@
 #define ONE_DAY 86400.0
 
 // convars
-ConVar g_cvUpdateInterval,
+ConVar g_cvConfigFile,
+       g_cvCredentialsFile,
+       g_cvUpdateInterval,
        g_cvLogConnections,
        g_cvLogMapChanges,
        g_cvUseRoleColors,
@@ -31,6 +33,9 @@ bool g_bShowDiscordPrefix;
 char g_sDiscordColor[8];
 bool g_bAllowUserPings;
 bool g_bAllowRolePings;
+
+// config tracking
+char g_sLoadedConfigFile[64];
 
 // credentials
 char g_sBotToken[128],
