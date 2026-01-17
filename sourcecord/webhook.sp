@@ -93,6 +93,7 @@ void SendWebhook(const char[] username, const char[] content, const char[] avata
 	}
 
 	ConvertTextEmojisToDiscord(finalContent, sizeof finalContent);
+	ConvertShortcodesToUnicodeEmojis(finalContent, sizeof finalContent);
 	ConvertTextUserMentionsToDiscord(finalContent, sizeof finalContent);
 	ConvertTextRoleMentionsToDiscord(finalContent, sizeof finalContent);
 

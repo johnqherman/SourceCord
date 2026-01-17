@@ -8,6 +8,7 @@
 #define PLUGIN_VERSION "1.1.0+build.1"
 
 #include "sourcecord/globals.sp"
+#include "sourcecord/emoji_data.sp"
 #include "sourcecord/config.sp"
 #include "sourcecord/discord/api.sp"
 #include "sourcecord/cache.sp"

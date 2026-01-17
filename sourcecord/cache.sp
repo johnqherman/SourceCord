@@ -8,6 +8,8 @@ void InitializeCaches() {
 	g_hGuildEmojiCache = new StringMap();
 	g_hGuildMemberCache = new StringMap();
 	g_hGuildRoleCache = new StringMap();
+	g_hEmojiMap = new StringMap();
+	PopulateEmojiMap(g_hEmojiMap);
 	g_hMessageQueue = new ArrayList(ByteCountToCells(512));
 	g_hProcessedMessages = new StringMap();
 	g_hMessageIdOrder = new ArrayList(ByteCountToCells(32));
@@ -87,6 +89,7 @@ void CleanupCaches() {
 	delete g_hGuildEmojiCache;
 	delete g_hGuildMemberCache;
 	delete g_hGuildRoleCache;
+	delete g_hEmojiMap;
 	delete g_hMessageQueue;
 	delete g_hProcessedMessages;
 	delete g_hMessageIdOrder;

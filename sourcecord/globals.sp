@@ -56,7 +56,8 @@ StringMap g_hUserColorCache,
           g_hRoleNameCache,
           g_hGuildEmojiCache,
           g_hGuildMemberCache,
-          g_hGuildRoleCache;
+          g_hGuildRoleCache,
+          g_hEmojiMap;
 
 // emoji state
 bool g_bEmojiFetched;

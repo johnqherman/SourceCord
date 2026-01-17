@@ -223,6 +223,94 @@ public void OnGuildEmojisResponse(HTTPResponse response, any data) {
 }
 
 
+void ConvertShortcodesToUnicodeEmojis(char[] messageContent, int maxContentLength) {
+	if (g_hEmojiMap.Size == 0) {
+		return;
+	}
+
+	int pos = 0;
+	int messageLen = strlen(messageContent);
+
+	while (pos < messageLen) {
+		if (messageContent[pos] != ':') {
+			pos++;
+			continue;
+		}
+
+		int colonEndPos = -1;
+		for (int i = pos + 1; i < messageLen && i < pos + 65; i++) {
+			if (messageContent[i] == ':') {
+				colonEndPos = i;
+				break;
+			}
+			if (messageContent[i] == ' ' || messageContent[i] == '\n' || messageContent[i] == '\t') {
+				break;
+			}
+		}
+
+		if (colonEndPos == -1 || colonEndPos == pos + 1) {
+			pos++;
+			continue;
+		}
+
+		int emojiNameLen = colonEndPos - pos - 1;
+		if (emojiNameLen <= 0 || emojiNameLen >= 64) {
+			pos++;
+			continue;
+		}
+
+		char emojiName[64], emojiNameUnescaped[64];
+		CopySubstring(messageContent, pos + 1, emojiNameLen, emojiName, sizeof emojiName);
+
+		strcopy(emojiNameUnescaped, sizeof emojiNameUnescaped, emojiName);
+		ReplaceString(emojiNameUnescaped, sizeof emojiNameUnescaped, "\\_", "_", true);
+
+		char unicodeEmoji[32];
+		if (!g_hEmojiMap.GetString(emojiNameUnescaped, unicodeEmoji, sizeof unicodeEmoji)) {
+			pos++;
+			continue;
+		}
+
+		char textEmoji[128];
+		Format(textEmoji, sizeof textEmoji, ":%s:", emojiName);
+
+		ReplaceString(messageContent, maxContentLength, textEmoji, unicodeEmoji, false);
+
+		messageLen = strlen(messageContent);
+		pos += strlen(unicodeEmoji);
+	}
+}
+
+
+void ConvertUnicodeEmojisToShortcodes(char[] messageContent, int maxContentLength) {
+	if (g_hEmojiMap.Size == 0) {
+		return;
+	}
+
+	StringMapSnapshot snapshot = g_hEmojiMap.Snapshot();
+	int size = snapshot.Length;
+
+	for (int i = 0; i < size; i++) {
+		char shortcode[64];
+		snapshot.GetKey(i, shortcode, sizeof shortcode);
+
+		char unicode[32];
+		g_hEmojiMap.GetString(shortcode, unicode, sizeof unicode);
+
+		if (StrContains(messageContent, unicode, false) == -1) {
+			continue;
+		}
+
+		char shortcodeFormatted[68];
+		Format(shortcodeFormatted, sizeof shortcodeFormatted, ":%s:", shortcode);
+
+		ReplaceString(messageContent, maxContentLength, unicode, shortcodeFormatted, false);
+	}
+
+	delete snapshot;
+}
+
+
 void ConvertTextEmojisToDiscord(char[] messageContent, int maxContentLength) {
 	if (!g_bEmojiFetched || g_hGuildEmojiCache.Size == 0) {
 		return;

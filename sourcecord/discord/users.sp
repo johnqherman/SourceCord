@@ -9,11 +9,15 @@ void PrintDiscordMessage(const char[] username, const char[] message, const char
 		strcopy(finalUserColor, sizeof finalUserColor, userColor);
 	}
 
+	char finalMessage[512];
+	strcopy(finalMessage, sizeof finalMessage, message);
+	ConvertUnicodeEmojisToShortcodes(finalMessage, sizeof finalMessage);
+
 	if (showPrefix && g_bShowDiscordPrefix) {
-		PrintToChatAll("%s[Discord] %s%s%s :  %s", DISCORD_PREFIX_COLOR, finalUserColor, username, CHAT_COLOR_RESET, message);
+		PrintToChatAll("%s[Discord] %s%s%s :  %s", DISCORD_PREFIX_COLOR, finalUserColor, username, CHAT_COLOR_RESET, finalMessage);
 	}
 	else {
-		PrintToChatAll("%s%s%s :  %s", finalUserColor, username, CHAT_COLOR_RESET, message);
+		PrintToChatAll("%s%s%s :  %s", finalUserColor, username, CHAT_COLOR_RESET, finalMessage);
 	}
 }
 
