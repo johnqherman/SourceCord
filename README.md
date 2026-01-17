@@ -19,9 +19,10 @@ Players can talk with Discord users directly from in-game, while Discord message
 ## Features
 
 - **Two-way chat sync**: Game ↔ Discord messages in real time
-- **Mentions**: Handles user, role, and channel mentions seamlessly
+- **Ping support**: Allows in-game players to ping Discord users and roles (configurable)
+- **Emoji support**: Bidirectional emoji conversion, including custom Discord server emojis
 - **Steam profile integration**: Player avatars and configurable Steam ID formats
-- **Server event logs**: Join/leave notifications for players
+- **Server event logs**: Join/leave notifications and optional map change logging
 - **Caching system**: Fast lookups for avatars, nicknames, role colors, etc.
 
 ## Game Compatibility
@@ -69,11 +70,14 @@ On first load, the plugin generates `cfg/sourcemod/sourcecord.cfg` with default 
 ```cfg
 sc_interval "1.0"              // Check Discord messages every x second(s)
 sc_log_connections "1"         // Log player connections (0 = off, 1 = basic, 2 = with IP)
+sc_log_map_changes "0"         // Log map changes to Discord when players are connected
 sc_use_role_colors "1"         // Show Discord role colors in-game? (enabled by default)
 sc_use_nicknames "1"           // Use Discord server nicknames? (enabled by default)
 sc_show_steam_id "1"           // Show Steam ID format (0 = off, 1 = steamID3, 2 = steamID)
 sc_show_discord_prefix "1"     // Show [Discord] prefix in chat messages? (enabled by default)
 sc_discord_color "5865F2"      // Hex color for Discord usernames in game chat (blurple by default)
+sc_allow_user_pings "0"        // Allow in-game players to @mention Discord users (disabled by default)
+sc_allow_role_pings "0"        // Allow in-game players to @mention Discord roles (disabled by default)
 ```
 
 ### 2. Credentials File
@@ -97,6 +101,17 @@ The plugin will also generate `addons/sourcemod/configs/sourcecord.cfg` to store
     }
 }
 ```
+
+### 3. Custom Config File Paths (Optional)
+
+If you're running multiple servers and need separate configurations, you can specify custom file names. These must be set in `server.cfg` (or via command line) **before** the plugin loads:
+
+```cfg
+sc_config_file "customfile"       // Uses cfg/sourcemod/customfile.cfg
+sc_credentials_file "customfile"  // Uses configs/customfile.cfg
+```
+
+> ⚠️**Note**: These cvars must be set in `server.cfg` or via launch options, not in `cfg/sourcemod/sourcecord.cfg`, as they determine which config files to load.
 
 ## Discord Setup
 
@@ -215,6 +230,28 @@ Customize the default color of Discord usernames in game chat:
 <img src="https://github.com/user-attachments/assets/ddb63c07-ace9-40a9-a052-d874ccd1cf6f" style="margin-top: -10px; margin-bottom: -10px;"></img>
 
 > ⚠️**Note**: When Discord role colors are enabled (`sc_use_role_colors 1`), user role colors take precedence over `sc_discord_color`.
+
+### Map Change Logging
+
+Log map changes to Discord when players are connected:
+
+- **Disabled** (`sc_log_map_changes 0`):
+  - No map change messages sent to Discord (default)
+
+- **Enabled** (`sc_log_map_changes 1`):
+  - Announces map changes to Discord when players are online
+
+### User and Role Pings
+
+Allow in-game players to ping Discord users and roles by typing `@username` or `@rolename` in chat:
+
+- **User Pings** (`sc_allow_user_pings`):
+  - `0` = Disabled (default) - @mentions appear as plain text
+  - `1` = Enabled - @mentions convert to actual Discord pings
+
+- **Role Pings** (`sc_allow_role_pings`):
+  - `0` = Disabled (default) - @mentions appear as plain text
+  - `1` = Enabled - @mentions convert to actual Discord role pings
 
 ## Building from Source
 
