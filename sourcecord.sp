@@ -37,21 +37,9 @@ public void OnPluginStart() {
 
 
 public void OnConfigsExecuted() {
-	if (CheckConfigFileChange()) {
-		CreateTimer(0.1, Timer_DelayedInit);
-	} else {
-		CacheSettings();
-		LoadCredentials();
-		StartTimer();
-	}
-}
-
-
-Action Timer_DelayedInit(Handle timer) {
 	CacheSettings();
 	LoadCredentials();
 	StartTimer();
-	return Plugin_Stop;
 }
 
 

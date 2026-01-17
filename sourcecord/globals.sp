@@ -34,9 +34,6 @@ char g_sDiscordColor[8];
 bool g_bAllowUserPings;
 bool g_bAllowRolePings;
 
-// config tracking
-char g_sLoadedConfigFile[64];
-
 // credentials
 char g_sBotToken[128],
      g_sChannelId[32],

@@ -1,6 +1,6 @@
 void InitializeConfig() {
-	g_cvConfigFile = CreateConVar("sc_config_file", "sourcecord", "Settings config file name in cfg/sourcemod/ (set in server.cfg)", FCVAR_NOTIFY);
-	g_cvCredentialsFile = CreateConVar("sc_credentials_file", "sourcecord", "Credentials config file name in sourcemod/configs/ (set in server.cfg)", FCVAR_NOTIFY);
+	g_cvConfigFile = CreateConVar("sc_config_file", "sourcecord", "Settings config file name (use sm_cvar in server.cfg for per-server configs)", FCVAR_NOTIFY | FCVAR_DONTRECORD);
+	g_cvCredentialsFile = CreateConVar("sc_credentials_file", "sourcecord", "Credentials config file name (use sm_cvar in server.cfg for per-server configs)", FCVAR_NOTIFY | FCVAR_DONTRECORD);
 	g_cvUpdateInterval = CreateConVar("sc_interval", "1.0", "Discord check interval (seconds)", FCVAR_NOTIFY, true, 1.0, true, 10.0);
 	g_cvLogConnections = CreateConVar("sc_log_connections", "1", "Log player connect/disconnects (off, basic, with IP)", FCVAR_NOTIFY, true, 0.0, true, 2.0);
 	g_cvLogMapChanges = CreateConVar("sc_log_map_changes", "0", "Log map changes to Discord when players are connected", FCVAR_NOTIFY, true, 0.0, true, 1.0);
@@ -13,52 +13,34 @@ void InitializeConfig() {
 	g_cvAllowRolePings = CreateConVar("sc_allow_role_pings", "0", "Allow in-game users to ping Discord roles via @rolename", FCVAR_NOTIFY, true, 0.0, true, 1.0);
 
 	// hook convar changes
-	g_cvUpdateInterval.AddChangeHook(OnConVarChanged);
-	g_cvLogConnections.AddChangeHook(OnConVarChanged);
-	g_cvLogMapChanges.AddChangeHook(OnConVarChanged);
-	g_cvUseRoleColors.AddChangeHook(OnConVarChanged);
-	g_cvUseNicknames.AddChangeHook(OnConVarChanged);
-	g_cvShowSteamId.AddChangeHook(OnConVarChanged);
-	g_cvShowDiscordPrefix.AddChangeHook(OnConVarChanged);
-	g_cvDiscordColor.AddChangeHook(OnConVarChanged);
-	g_cvAllowUserPings.AddChangeHook(OnConVarChanged);
-	g_cvAllowRolePings.AddChangeHook(OnConVarChanged);
+	g_cvCredentialsFile.AddChangeHook(OnCredentialsFileChanged);
+	g_cvUpdateInterval.AddChangeHook(OnIntervalChanged);
+	g_cvLogConnections.AddChangeHook(OnSettingsChanged);
+	g_cvLogMapChanges.AddChangeHook(OnSettingsChanged);
+	g_cvUseRoleColors.AddChangeHook(OnSettingsChanged);
+	g_cvUseNicknames.AddChangeHook(OnSettingsChanged);
+	g_cvShowSteamId.AddChangeHook(OnSettingsChanged);
+	g_cvShowDiscordPrefix.AddChangeHook(OnSettingsChanged);
+	g_cvDiscordColor.AddChangeHook(OnSettingsChanged);
+	g_cvAllowUserPings.AddChangeHook(OnSettingsChanged);
+	g_cvAllowRolePings.AddChangeHook(OnSettingsChanged);
 
-	// auto-create and execute config file
-	char configFile[64];
-	g_cvConfigFile.GetString(configFile, sizeof configFile);
-	strcopy(g_sLoadedConfigFile, sizeof g_sLoadedConfigFile, configFile);
-	AutoExecConfig(true, configFile);
+	AutoExecConfig(true, "sourcecord");
 }
 
 
-bool CheckConfigFileChange() {
-	char configFile[64];
-	g_cvConfigFile.GetString(configFile, sizeof configFile);
-
-	if (!StrEqual(configFile, g_sLoadedConfigFile)) {
-		char configPath[PLATFORM_MAX_PATH];
-		Format(configPath, sizeof configPath, "cfg/sourcemod/%s.cfg", configFile);
-
-		if (FileExists(configPath)) {
-			LogMessage("sc_config_file changed to '%s', executing config", configFile);
-			ServerCommand("exec sourcemod/%s.cfg", configFile);
-			strcopy(g_sLoadedConfigFile, sizeof g_sLoadedConfigFile, configFile);
-			return true;
-		} else {
-			LogError("Config file does not exist: %s (falling back to %s)", configPath, g_sLoadedConfigFile);
-		}
-	}
-	return false;
+public void OnCredentialsFileChanged(ConVar convar, const char[] oldValue, const char[] newValue) {
+	LoadCredentials();
 }
 
 
-public void OnConVarChanged(ConVar convar, const char[] oldValue, const char[] newValue) {
+public void OnIntervalChanged(ConVar convar, const char[] oldValue, const char[] newValue) {
+	StartTimer();
+}
+
+
+public void OnSettingsChanged(ConVar convar, const char[] oldValue, const char[] newValue) {
 	CacheSettings();
-
-	if (convar == g_cvUpdateInterval) {
-		StartTimer();
-	}
 }
 
 

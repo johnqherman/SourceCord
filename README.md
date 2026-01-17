@@ -102,16 +102,16 @@ The plugin will also generate `addons/sourcemod/configs/sourcecord.cfg` to store
 }
 ```
 
-### 3. Custom Config File Paths (Optional)
+### 3. Custom Config Files (Optional)
 
-If you're running multiple servers and need separate configurations, you can specify custom file names. These must be set in `server.cfg` (or via command line) **before** the plugin loads:
+If you're running multiple servers and need separate configurations, you can specify custom file names per-server in `server.cfg`:
 
 ```cfg
-sc_config_file "customfile"       // Uses cfg/sourcemod/customfile.cfg
-sc_credentials_file "customfile"  // Uses configs/customfile.cfg
+sm_cvar sc_config_file "customfile"       // Uses cfg/sourcemod/customfile.cfg
+sm_cvar sc_credentials_file "customfile"  // Uses configs/customfile.cfg
 ```
 
-> ⚠️**Note**: These cvars must be set in `server.cfg` or via launch options, not in `cfg/sourcemod/sourcecord.cfg`, as they determine which config files to load.
+> ⚠️**Note**: These cvars must be set in `server.cfg`, not `cfg/sourcemod/sourcecord.cfg`, since they control which config files are loaded at startup.
 
 ## Discord Setup
 
