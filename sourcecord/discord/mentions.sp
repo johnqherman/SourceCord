@@ -30,7 +30,7 @@ bool ProcessUserMentions(char[] content, int maxlen, const char[] userId, const 
 			CopySubstring(content, userIdStartPosition, userIdLength, mentionId, sizeof mentionId);
 
 			char cachedDisplayName[64];
-			if (GetCachedDiscordData(g_hUserNameCache, mentionId, cachedDisplayName, sizeof cachedDisplayName, DISCORD_LONG_TTL)) {
+			if (GetCachedDiscordData(g_hUserNameCache, mentionId, cachedDisplayName, sizeof cachedDisplayName, ONE_DAY)) {
 				Format(mentionPattern, sizeof mentionPattern, "<@%s>", mentionId);
 				char mentionReplacement[128];
 				Format(mentionReplacement, sizeof mentionReplacement, "@%s", cachedDisplayName);
@@ -68,7 +68,7 @@ bool ProcessChannelMentions(char[] content, int maxlen, const char[] userId, con
 			CopySubstring(content, idStartPosition, idLength, mentionId, sizeof mentionId);
 
 			char cachedName[64];
-			if (GetCachedDiscordData(g_hChannelNameCache, mentionId, cachedName, sizeof cachedName, DISCORD_LONG_TTL)) {
+			if (GetCachedDiscordData(g_hChannelNameCache, mentionId, cachedName, sizeof cachedName, ONE_DAY)) {
 				Format(mentionPattern, sizeof mentionPattern, "<#%s>", mentionId);
 				char mentionReplacement[128];
 				Format(mentionReplacement, sizeof mentionReplacement, "#%s", cachedName);
@@ -106,7 +106,7 @@ bool ProcessRoleMentions(char[] content, int maxlen, const char[] userId, const 
 			CopySubstring(content, idStartPosition, idLength, mentionId, sizeof mentionId);
 
 			char cachedName[64];
-			if (GetCachedDiscordData(g_hRoleNameCache, mentionId, cachedName, sizeof cachedName, DISCORD_LONG_TTL)) {
+			if (GetCachedDiscordData(g_hRoleNameCache, mentionId, cachedName, sizeof cachedName, ONE_DAY)) {
 				Format(mentionPattern, sizeof mentionPattern, "<@&%s>", mentionId);
 				char mentionReplacement[128];
 				Format(mentionReplacement, sizeof mentionReplacement, "@%s", cachedName);

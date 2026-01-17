@@ -175,7 +175,7 @@ void FetchGuildEmojis() {
 	}
 
 	float currentTime = GetGameTime();
-	if (g_bEmojiFetched && (currentTime - g_fEmojiLastFetch) < EMOJI_CACHE_TTL) {
+	if (g_bEmojiFetched && (currentTime - g_fEmojiLastFetch) < ONE_HOUR) {
 		return;
 	}
 
@@ -479,7 +479,7 @@ void FetchGuildMembers() {
 	}
 
 	float currentTime = GetGameTime();
-	if (g_bMembersFetched && (currentTime - g_fMembersLastFetch) < MEMBER_CACHE_TTL) {
+	if (g_bMembersFetched && (currentTime - g_fMembersLastFetch) < ONE_HOUR) {
 		return;
 	}
 
@@ -544,7 +544,7 @@ void FetchGuildRoles() {
 	}
 
 	float currentTime = GetGameTime();
-	if (g_bRolesFetched && (currentTime - g_fRolesLastFetch) < ROLE_CACHE_TTL) {
+	if (g_bRolesFetched && (currentTime - g_fRolesLastFetch) < ONE_HOUR) {
 		return;
 	}
 

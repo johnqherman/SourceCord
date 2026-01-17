@@ -26,7 +26,7 @@ void SendToDiscord(int client, const char[] message, bool isTeamChat = false) {
 
 void GetSteamAvatar(const char[] steamId64, const char[] webhookUsername, const char[] message) {
 	char cachedPlayerAvatar[256];
-	if (GetCachedDiscordData(g_hUserAvatarCache, steamId64, cachedPlayerAvatar, sizeof cachedPlayerAvatar, AVATAR_CACHE_TTL)) {
+	if (GetCachedDiscordData(g_hUserAvatarCache, steamId64, cachedPlayerAvatar, sizeof cachedPlayerAvatar, THIRTY_MINUTES)) {
 		SendWebhook(webhookUsername, message, cachedPlayerAvatar);
 		return;
 	}

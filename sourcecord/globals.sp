@@ -4,13 +4,9 @@
 #define DISCORD_PREFIX_COLOR "\x075865F2"
 #define CHAT_COLOR_RESET "\x01"
 #define MAX_RETRY_DELAY 60.0
-#define AVATAR_CACHE_TTL 1800.0 // 30 minutes
-#define DISCORD_NICK_TTL 1800.0 // 30 minutes
-#define DISCORD_COLOR_TTL 3600.0 // 1 hour
-#define DISCORD_LONG_TTL 86400.0 // 24 hours
-#define EMOJI_CACHE_TTL 3600.0 // 1 hour
-#define MEMBER_CACHE_TTL 3600.0 // 1 hour
-#define ROLE_CACHE_TTL 3600.0 // 1 hour
+#define THIRTY_MINUTES 1800.0
+#define ONE_HOUR 3600.0
+#define ONE_DAY 86400.0
 
 // convars
 ConVar g_cvUpdateInterval,

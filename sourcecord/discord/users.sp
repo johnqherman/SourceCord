@@ -253,7 +253,7 @@ public void GetDiscordRoleColor(const char[] userId, const char[] username, cons
 
 	if (g_bUseNicknames) {
 		char cachedNick[64];
-		if (GetCachedDiscordData(g_hUserNickCache, userId, cachedNick, sizeof cachedNick, DISCORD_NICK_TTL)) {
+		if (GetCachedDiscordData(g_hUserNickCache, userId, cachedNick, sizeof cachedNick, THIRTY_MINUTES)) {
 			strcopy(displayName, sizeof displayName, cachedNick);
 		}
 		else {
@@ -268,7 +268,7 @@ public void GetDiscordRoleColor(const char[] userId, const char[] username, cons
 	}
 
 	char cachedColor[8];
-	if (GetCachedDiscordData(g_hUserColorCache, userId, cachedColor, sizeof cachedColor, DISCORD_COLOR_TTL)) {
+	if (GetCachedDiscordData(g_hUserColorCache, userId, cachedColor, sizeof cachedColor, ONE_HOUR)) {
 		PrintDiscordMessage(displayName, content, cachedColor);
 		return;
 	}
