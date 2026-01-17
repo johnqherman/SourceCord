@@ -5,7 +5,7 @@
 #include <sdktools>
 #include <ripext>
 
-#define PLUGIN_VERSION "1.1.1"
+#define PLUGIN_VERSION "1.1.2"
 
 #include "sourcecord/globals.sp"
 #include "sourcecord/emoji_data.sp"
