@@ -1678,6 +1678,11 @@ void PopulateEmojiMap(StringMap map) {
 	map.SetString("skeleton", "\xF0\x9F\x92\x80");
 	map.SetString("ski", "\xF0\x9F\x8E\xBF");
 	map.SetString("skier", "\xE2\x9B\xB7\xEF\xB8\x8F");
+	map.SetString("skin-tone-1", "\xF0\x9F\x8F\xBB");
+	map.SetString("skin-tone-2", "\xF0\x9F\x8F\xBC");
+	map.SetString("skin-tone-3", "\xF0\x9F\x8F\xBD");
+	map.SetString("skin-tone-4", "\xF0\x9F\x8F\xBE");
+	map.SetString("skin-tone-5", "\xF0\x9F\x8F\xBF");
 	map.SetString("skull", "\xF0\x9F\x92\x80");
 	map.SetString("skull_and_crossbones", "\xE2\x98\xA0\xEF\xB8\x8F");
 	map.SetString("skull_crossbones", "\xE2\x98\xA0\xEF\xB8\x8F");
